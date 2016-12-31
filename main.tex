@@ -1,0 +1,36 @@
+%% -*- coding: utf-8-unix -*-
+
+\documentclass[uplatex,dvipdfmx,report]{jsbook}
+\usepackage{array} % table
+\usepackage{tabularx} % table
+\usepackage{upquote} % backquote
+\usepackage{mymacros} % macros defined myself
+% href and pdf bookmark
+\usepackage[dvipdfmx]{hyperref}
+\usepackage{pxjahyper}
+
+\begin{document}
+\title{ネットワークテストシステム プロジェクト \\ 2016年度 成果報告書}
+\author{ネットワークテストシステム プロジェクトチーム}
+\maketitle
+
+\tableofcontents
+\frontmatter
+\include{dictionary}
+\mainmatter
+\include{abstract}
+\include{issues}
+\include{nettester_design}
+\include{nettester_usage}
+\include{test_scenario}
+\include{poc}
+\include{conclusion}
+\appendix
+\include{appendix}
+\include{cites}
+\end{document}
+
+%%% Local Variables:
+%%% mode: yatex
+%%% TeX-master:
+%%% End:

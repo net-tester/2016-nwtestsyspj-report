@@ -1,0 +1,75 @@
+%% -*- coding: utf-8-unix -*-
+
+\chapter{ NetTesterの技術仕様}
+
+\section{モデル}
+
+NetTester の構成(モデル)
+
+つかっている技術:
+\begin{itemize}
+ \item network namespaceとその操作, trema/phut
+       \begin{itemize}
+        \item Phut Memo – NetTester https://3.basecamp.com/3088280/buckets/867009/documents/238439817
+       \end{itemize}
+ \item patch panel 実装, ActiveFlow
+       \begin{itemize}
+        \item パッチの概要 → パッチ – NetTester https://3.basecamp.com/3088280/buckets/867009/documents/213266851
+        \item "patch panel" model – NetTester https://3.basecamp.com/3088280/buckets/867009/documents/208275139
+       \end{itemize}
+\end{itemize}
+
+phut, activeflowなどの実装寄りのはなしは付録とかにするか。
+
+\section{フロールール設計}
+
+2015年度実装に対してあるていど簡略化した実装になっているのでそのへんのはなし。
+
+flowの優先度
+\begin{itemize}
+ \item テスト対象NW→Host(テストノード)へのbroadcastのコントロール – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/198950295
+ \item NetTester機能拡張検討
+       \url{https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view}
+       いくつのフロー案とどれを、なぜ選択したのか、という話
+ \item Table \& Rule Priority Design (2015 ool-l1patch) – NetTester https://3.basecamp.com/3088280/buckets/867009/documents/211290387
+ \item Table \& Rule Priority Design (NetTester) – NetTester https://3.basecamp.com/3088280/buckets/867009/documents/217426690
+       \begin{itemize}
+        \item default deny の要否: packet-in をいれるかどうか → デバッグ用途のはなし?
+        \item packet-in による trema の trouble/trouble shoot → 補足とかでいれる?
+              \begin{itemize}
+               \item 謎PacketInで死なずにログを出す – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/221324759
+               \item 調査: テスト環境でOFS(Pica8)-OFC(NetTester/Trema)の接続が切れる – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/218484578
+              \end{itemize}
+       \end{itemize}
+ \item VLAN Trunk Portを使ったテストシナリオを作る – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/238166429
+ \item テスト対象NW機器間接続patch機能を作る – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/238169839
+\end{itemize}
+
+\section{リンク操作方式}
+
+\begin{itemize}
+ \item テスト対象NW機器間接続のup/down方式を決める – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/238171702
+ \item リンクダウン・リンクアップ機能用のスクリプト実装 – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/247379766
+\end{itemize}
+
+\section{制限・制約}
+
+モデルから: 拡張性に関するはなし
+
+フロールールから: arp があるていどみえてしまうこと → セキュリティについて?
+
+DPIDや一部のポート番号の固定について
+\begin{itemize}
+ \item NetTesterの実装で気になるところ – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/196940380
+\end{itemize}
+
+NetTester 自体の通信要件?
+\begin{itemize}
+ \item openflow, ssh, syslog 等
+\end{itemize}
+
+
+%%% Local Variables:
+%%% mode: yatex
+%%% TeX-master: main.tex
+%%% End:

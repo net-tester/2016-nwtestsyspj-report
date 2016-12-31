@@ -1,0 +1,28 @@
+%% -*- coding: utf-8-unix -*-
+\usepackage{tikz}
+\usepackage[framemethod=tikz]{mdframed}
+
+% ref: http://www.opt.mist.i.u-tokyo.ac.jp/~tasuku/tikz.html
+\newcommand{\code}[1]{\tikz[baseline=(x.base)]{\node(x)[rectangle, fill=gray!10, rounded corners]{\texttt{#1}}}}
+
+% 本当はverbatimをくみあわせたいが、
+% newenvironment 内で verbatim を使うことはできないようなので、
+% 本文中で併用すること。
+\newenvironment{program} {
+ \begin{mdframed}[roundcorner=0.3zw,
+  skipabove=1zw, skipbelow=1zw,
+  innertopmargin=1zw, innerbottommargin=1zw,
+  innerleftmargin=0.8zw, innerrightmargin=0.8zw,
+  linecolor=gray!10, linewidth=0.1zw, backgroundcolor=gray!10]
+ }{
+ \end{mdframed}
+ }
+
+%% table/figure number format
+%% http://www.biwako.shiga-u.ac.jp/sensei/kumazawa/tex/011.html
+
+\renewcommand{\thetable}{\thechapter.\arabic{table}}
+  \@addtoreset{table}{chapter}
+
+\renewcommand{\thefigure}{\thechapter.\arabic{figure}}
+   \@addtoreset{figure}{chapter}

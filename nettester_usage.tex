@@ -1,0 +1,68 @@
+%% -*- coding: utf-8-unix -*-
+
+\chapter{NetTesterの使いかた}
+
+\section{インストール}
+
+デプロイの方法
+
+\begin{itemize}
+ \item 物理OFSのデプロイ
+       \begin{itemize}
+        \item pica8 (OVS) の設定について
+              \begin{itemize}
+               \item Portの設定(VLAN) : [L1PJTECH] 参照
+               \item fail\_mode の設定 : https://docs.google.com/document/d/1sYozdBu4Lq3ahH7NNZlova2NQhn8N5BKFTVlP*xBzUY/
+               \item inactivity probe の設定: 調査: テスト環境でOFS(Pica8)-OFC(NetTester/Trema)の接続が切れる – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/218484578} , \url{https://docs.google.com/document/d/1_-pLOXSOLutRb1_-tlcb_FwLCHq3Y7zQxp79_qXjDiM/}
+                     (そんなに重要じゃないけど一応)
+              \end{itemize}
+       \end{itemize}
+ \item NetTester Server のセットアップ
+       \begin{itemize}
+        \item NetTesterモデルの制約とサーバ構成の選択肢
+              \begin{itemize}
+               \item 必要なNIC
+               \item ベアメタル
+               \item KVM による仮想化, その場合のNIC設定
+              \end{itemize}
+        \item 必要なソフトウェア(package)とインストール
+              \begin{itemize}
+               \item 基本的なパッケージ
+                     \begin{itemize}
+                      \item Git
+                      \item Build-Essentials
+                      \item テストシナリオでつかうもの (nc, dnsmasqなど)
+                     \end{itemize}
+               \item OSの設定
+                     \begin{itemize}
+                      \item sudoers secure\_path
+                     \end{itemize}
+               \item open vswitch
+               \item ruby, rubyenv
+              \end{itemize}
+        \item シナリオ (net-tester/examples) のインストール
+        \item NetTester のインストール
+       \end{itemize}
+\end{itemize}
+
+\section{基本的な使い方}
+
+NetTester 単独での利用
+\begin{itemize}
+ \item NetTesterでad-hocなテスト作業を拡張する - Qiita http://qiita.com/corestate55/items/d6a8cdc03de09a46877c
+       これの基礎編のところをいれておけばよいとおもわれる
+ \item 環境変数の設定
+       \begin{itemize}
+        \item ``DEVICE``
+              \begin{itemize}
+               \item 調査：セグメントローカルの試験がとおらない – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/259184454
+               \item ネットワークデバイスと dpid を rake に渡せるようにする – NetTester https://3.basecamp.com/3088280/buckets/867009/todos/214833956
+              \end{itemize}
+        \item expectacle 関連
+       \end{itemize}
+\end{itemize}
+
+%%% Local Variables:
+%%% mode: yatex
+%%% TeX-master: main.tex
+%%% End:

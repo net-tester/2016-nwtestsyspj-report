@@ -1,0 +1,48 @@
+%% -*- coding: utf-8-unix -*-
+
+\chapter{用語}
+\label{cpt:termdef}
+
+表\ref{tbl:termdef} に本書で使用している用語・略語の一覧を示す。一般的な
+用語については特に解説をくわえない。
+
+\begin{table}[h]
+ \caption{用語定義}
+ \label{tbl:termdef}
+ \begin{tabular}[t]{|p{6em}|p{6em}|c|c|p{20em}|}
+  \hline
+  用語 & 英語表記 & 略語 & 分類 & 意味\\
+  \hline
+  沖縄オープンラボラトリ & Okinawa Open Laboratory & OOL & 一般 & (略語定義) 一般社団法人 沖縄オープンラボラトリ \url{https://www.okinawaopenlabs.org/} \\
+  ネットワーク & Network & NW & 一般 & (略語定義) \\
+  ファイアウォール & Firewall & FW & 一般 & (略語定義) \\
+  ロードバランサ & Load Balancer & LB & 一般 & (略語定義) \\
+  & Virtual Private Network & VPN & 一般 & (略語定義) \\
+  L1パッチ & L1patch & & プロジェクト & 一般的なネットワーク用パッチパネル(物理結線を集中して付け替えるための機構)。本書では「ネットワーク用パッチパネルと同等のことをおこなえるシステム」として使う。 \\
+  & OpenFlow & OF & 一般 & (略語定義) \\
+  & OpenFlow Switch & OFS & 一般 & (略語定義) \\
+  & OpenFlow Controller & OFC & 一般 & (略語定義) \\
+  テスト対象ネットワーク & Target/Testee Network & & 一般 & 動作確認を行いたいネットワーク。複数のネットワーク機器から構成される。\\
+  テスト対象機器 & Device Under Test & DUT & 一般 & テスト対象となる個々の機器。テスト対象ネットワークを構成するいずれかひとつの機器。\\
+  & Open vSwitch & OVS & 一般 & Linux上で動作するL2スイッチ/OFS実装。 \\
+  & NetTester & & プロジェクト & 本プロジェクトで開発したネットワークテストツール。 \\
+  & Cucumber & & 一般 & BDDテストツール/テストシナリオ記述言語。 \\
+  \hline
+ \end{tabular}
+\end{table}
+
+テスト \code{command <hoge> -aa x}
+
+\begin{program}
+\begin{verbatim}
+for x in `ls -1 *.tex`
+do
+    echo "tex file: $x"
+done
+\end{verbatim}
+\end{program}
+
+%%% Local Variables:
+%%% mode: yatex
+%%% TeX-master: main.tex
+%%% End:
