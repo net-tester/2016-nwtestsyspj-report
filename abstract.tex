@@ -1,14 +1,20 @@
 %% -*- coding: utf-8-unix -*-
 
 \chapter{はじめに}
+\label{chap:abstract}
 
  \section{本書の目的}
+ \label{sec:book-purpose}
 
 本書は、沖縄オープンラボラトリで2016年度に実施された「ネットワークテスト
 システムプロジェクト」の活動報告書である。本書の目的は、プロジェクトの目
 標と実施した活動、活動の結果・成果をまとめ、報告することである。
 
  \section{本プロジェクトの目的}
+ \label{sec:pj-purpose}
+
+% TODO: OOD発表資料のp1 : 視点/観点の話をいれること
+% OOD発表資料のp.2-3
 
 情報システムを構築し、利用者に提供していくにあたって、システムを構築・運
 用する側は、様々な製品や技術をくみあわせてシステムを構成し、サービスを実
@@ -28,7 +34,8 @@
 の正常性を確認する(テストする)ためのシステム = ネットワークテストシステ
 ムの提案、およびその有効性を確認するための実証実験をおこなう。
 
-\section{前提事項}
+ \section{前提事項}
+ \label{sec:premise}
 
 本書の読者として、ネットワークテストシステムの有効性の判断や、利用・導入
 を検討をおこないたいエンジニアを想定している。以下にあげる点については基
@@ -40,13 +47,14 @@
         \item KVM による仮想マシン(VM)管理
         \item パッケージ管理
         \item git の使用方法
-        \item Linux Network Namespace および iproute2 ( ``ip`` コマンド)
-              によるNamespace の操作
+        \item Linux Network Namespace および iproute2 ( \code{ip} コマン
+              ド)によるNamespace の操作
        \end{itemize}
  \item 基本的なネットワークに関する知識
        \begin{itemize}
         \item TCP/IP および Ethernet/VLAN
-        \item Cisco や Juniper の L2/L3 Switch, Firewall の基本的な動作・設定
+        \item Cisco や Juniper の L2/L3 Switch, Firewall の基本的な動作・
+              設定
        \end{itemize}
  \item OpenFlow
        \begin{itemize}
