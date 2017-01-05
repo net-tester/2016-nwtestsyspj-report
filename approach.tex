@@ -1,0 +1,91 @@
+%% -*- coding: utf-8-unix -*-
+
+\chapter{課題に対するアプローチ}
+\label{chap:approach}
+
+ \section{理想像とプロジェクトのターゲット}
+ \label{sec:desiredandtarget}
+
+% 理想的にはどうなってほしいのか
+% ここではどこらへんをおとしどころにするか
+
+\begin{itemize}
+ \item NetTester機能拡張検討 \url{https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/}
+ \item ITHD技術交流会資料 \url{https://drive.google.com/drive/folders/0B2eRR_JxYJA5OFkzUFlveVlObWc}
+ \item ool意見交換会1019 \url{https://drive.google.com/drive/folders/0B2eRR_JxYJA5NHcxX0ZuTm9ZTEk}
+\end{itemize}
+
+  \subsection{自動テストの一般的な動向}
+
+ソフトウェア開発においては、システム(アプリケーション)の自動ビルド・自動
+デプロイ・自動テストなどがおこなわれ、特に近年では CI/CD や DevOps といっ
+たかたちでノウハウやベストプラクティスの蓄積・共有・ツールや環境の整備な
+どのとりくみをおこなうことが一般的になった。
+
+また、クラウドサービスを背景に、アプリケーション(ソフトウェア)だけでなく
+システム基盤についてもソフトウェアによる構築や制御が可能になってきた。ソ
+フトウェアによるシステム基盤全体を制御するという考えかたは、IaC
+(Infrastrucure as Code) や SDx(Software Defined Anything) /
+SDI(Infrastructure) / SDDC(DataCenter)など様々なコンセプトで実現されるよ
+うになってきている。
+
+CI/CDやDevOpsなどの取り組みは、単なるソフトウェア開発の範囲だけでなく、
+ソフトウェアによって制御可能な(クラウドサービスベースの)システム基盤を含
+むかたちでとりくまれるようになっている。こうした取り組みでは、アプリケー
+ションとシステム基盤全体の構築・運用を最適化し、システムの利用者への価値
+提供 = サービス価値を最大化することが求められる。
+
+  \subsection{「ふるまい」のテスト}
+
+  % サービスのテストとは? →二重の円の図
+  % なぜトップダウンにやるべきなのか
+  % (無駄なテストをさける/DHHのはなし:高宮さんTremaday沖縄資料, TDD/BDDまわりの話)
+  % 動的なテスト, 静的なテストとは何か?
+
+  \subsection{ネットワークの自動テストと運用プロセス}
+
+  % 既存の(ソフトウェア開発の)ツールや方法論が応用できること
+  % ぐるぐるまわす図
+  % だれに対して、どのようなメリットを提供するか?
+
+\ref{chap:problem-setting}章で解説したように、現状ネットワークのテストは
+人手によるところが多く、それがボトルネックになって網羅性やスケール性が低
+下している。仮に、現状人手に頼らざるをえないネットワークの操作が機械的に・
+自動実行できるとしたらどのような構築・運用プロセスをとることができるかに
+ついて検討する。
+
+まず、自動的に構築・運用ができると仮定した場合、ネットワークに対する構築
+や運用についてもソフトウェア開発でおこなわれているベストプラクティスやノ
+ウハウがそのまま応用できる形となることが理想的だと考える。これによって、
+
+
+ \section{ネットワークテストシステムの検討}
+
+ % OOD発表資料p.4-5 「6個の構成要素」の話。ここでターゲットにするものは何か?
+ % ネットワークの操作を自動化するために必要なことは?
+ % テストの自動化のためにどういった機能コンポーネントが必要か?
+
+ \section{「テスター」に対する要求}
+
+「テスター」に求められることは何か?
+\begin{itemize}
+ \item "patch panel" model – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/documents/208275139}
+\end{itemize}
+
+\section{NetTesterの概要}
+
+[L1PJTECH] 参照.
+
+このプロジェクトでは、「ネットワークテストシステム」としてどういったシ
+ステムを作ろうとしたのか?
+
+\begin{itemize}
+ \item NetTester の基本的なアイディア?
+ \item NetTester とは何か?
+\end{itemize}
+
+
+%%% Local Variables:
+%%% mode: yatex
+%%% TeX-master: main.tex
+%%% End:

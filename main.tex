@@ -1,12 +1,12 @@
 %% -*- coding: utf-8-unix -*-
 
 \documentclass[uplatex,dvipdfmx,report]{jsbook}
-\usepackage{array} % table
-\usepackage{tabularx} % table
+\usepackage{array,tabularx,longtable} % table
 \usepackage{upquote} % backquote
 \usepackage{mymacros} % macros defined myself
+\usepackage{url} % url
 % href and pdf bookmark
-\usepackage[dvipdfmx]{hyperref}
+\usepackage[dvipdfmx,bookmarksopen,bookmarksdepth=3]{hyperref}
 \usepackage{pxjahyper}
 
 \begin{document}
@@ -14,10 +14,13 @@
 \author{ネットワークテストシステム プロジェクトチーム}
 \maketitle
 
+\setcounter{tocdepth}{3}
 \tableofcontents
+
 \mainmatter
 \include{abstract}
 \include{issues}
+\include{approach}
 \include{nettester_design}
 \include{nettester_usage}
 \include{test_scenario}
