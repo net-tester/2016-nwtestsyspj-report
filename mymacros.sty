@@ -1,14 +1,62 @@
 %% -*- coding: utf-8-unix -*-
+
+\usepackage{array,tabularx,longtable} % table
+\usepackage[dvipdfmx,hiresbb]{graphicx} % figure
+\usepackage{float,wrapfig} % figure/table layout
+\usepackage{upquote} % backquote
+
+% program list
+% ref: http://www.biwako.shiga-u.ac.jp/sensei/kumazawa/tex/listings.html
+% ref: http://d.hatena.ne.jp/Kshi_Kshi/20110219/1298117610
+% ref: http://qiita.com/ayihis@github/items/c779e4ab5cd7580f1f87
+\usepackage{listings}
+\usepackage{color}
+\lstset{
+  breaklines=true,
+  language=Ruby,
+  basicstyle=\ttfamily,
+  columns=[1]{fullflexible},
+  keepspaces=true,
+  commentstyle={\ttfamily \color[cmyk]{1,0.4,1,0}},
+  classoffset=1,
+  keywordstyle={\bfseries \color[cmyk]{0,1,0,0}},
+  stringstyle={\ttfamily \color[rgb]{0,0,1}},
+  % frame=single,
+  frameshape={RYRNNNNN}{nny}{ynn}{RYRNNNNN}, % rounded corner frame
+  framesep=5pt,
+  rulecolor=\color{gray!90},
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\ttfamily,
+  stepnumber=1,
+  tabsize=2,
+}
+
+% change caption
+\renewcommand{\lstlistingname}{リスト}
+
+% for colored text box
 \usepackage{tikz}
 \usepackage[framemethod=tikz]{mdframed}
 
+% href and pdf bookmark
+\usepackage{url} % url
+\usepackage[dvipdfmx,bookmarksopen,bookmarksdepth=3]{hyperref}
+\usepackage{pxjahyper}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Macro definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % ref: http://www.opt.mist.i.u-tokyo.ac.jp/~tasuku/tikz.html
-\newcommand{\code}[1]{\tikz[baseline=(x.base)]{\node(x)[rectangle, fill=gray!10, rounded corners]{\texttt{#1}}}}
+% \newcommand{\code}[1]{\tikz[baseline=(x.base)]{\node(x)[rectangle, fill=gray!10, rounded corners]{\texttt{#1}}}}
+\newcommand{\code}[1]{\texttt{#1}} % alias texttt
 
 % 本当はverbatimをくみあわせたいが、
 % newenvironment 内で verbatim を使うことはできないようなので、
 % 本文中で併用すること。
-\newenvironment{program} {
+\newenvironment{textbox} {
  \begin{mdframed}[roundcorner=0.3zw,
   skipabove=1zw, skipbelow=1zw,
   innertopmargin=1zw, innerbottommargin=1zw,
@@ -25,8 +73,16 @@
   \@addtoreset{table}{chapter}
 
 \renewcommand{\thefigure}{\thechapter.\arabic{figure}}
-   \@addtoreset{figure}{chapter}
+  \@addtoreset{figure}{chapter}
 
 %% reference
 \newcommand{\figref}[1]{図~\ref{#1}}
 \newcommand{\tabref}[1]{表~\ref{#1}}
+\newcommand{\lstref}[1]{リスト~\ref{#1}}
+
+% QA: listingsパッケージのtitleオプションについて
+% http://oku.edu.mie-u.ac.jp/tex/mod/forum/discuss.php?d=1543
+% \begin{document} の直前におく
+\makeatletter
+\def\lst@title@dropdelim\hskip1zw{}
+\makeatother
