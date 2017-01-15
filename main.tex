@@ -3,6 +3,11 @@
 \documentclass[uplatex,dvipdfmx,report]{jsbook}
 \usepackage{color} % coloring
 \usepackage{array,tabularx,longtable,colortbl} % table
+
+% table footnote
+% http://tgrr-putan.blogspot.jp/2012/11/tex.html
+\usepackage{threeparttable}
+
 \usepackage[dvipdfmx,hiresbb]{graphicx} % figure
 \usepackage{float,wrapfig} % figure/table layout
 \usepackage{upquote} % backquote
@@ -31,7 +36,9 @@
 \maketitle
 
 \setcounter{tocdepth}{3}
-\tableofcontents
+\tableofcontents % 目次
+\listoffigures % 図目次
+\listoftables % 表目次
 
 \mainmatter
 \include{abstract}

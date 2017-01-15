@@ -95,7 +95,8 @@
 担保ではなく、BDDベースのネットワークテスト(ユースケースの実証)を目標と
 している(\ref{sec:behavior-test}節参照)。
 
-\section{フロールール設計の方針}
+ \section{フロールール設計の方針}
+ \label{sec:flow-design-policy}
 
 % 2015年度実装に対してあるていど簡略化した実装になっているのでそのへんのはなし。
 % flowの優先度
@@ -119,6 +120,7 @@
 % \end{itemize}
 
   \subsection{フロー制御対象の分類}
+  \label{sec:flow-design-grouping}
 
 NetTester が制御するテストシステムのトラフィックは大きく以下のように分類
 できる。それぞれについてNetTesterで OpenFlow によるフロー制御を使用する。
@@ -153,6 +155,7 @@ NetTesterでは、フロールール実装を簡略化するために、シス�
 以降、テスト用ノード配置のためのフロールールについて解説する。
 
   \subsection{フロー設計の方針と前提}
+  \label{sec:flow-design-premise}
   % Table & Rule Priority Design (NetTester) – NetTester
   % https://3.basecamp.com/3088280/buckets/867009/documents/217426690
 
@@ -188,6 +191,7 @@ NetTesterでは、フロールール実装を簡略化するために、シス�
 の優先度(priority)による制御をおこなう。
 
  \section{フロー制御設計}
+ \label{sec:flow-design}
  % https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view
 
 \lopjc ではテスト用ノード配置のためのフロールール設計を、複数の物理
@@ -345,7 +349,8 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
  \label{fig:l2bcctrl_plan2_implement}
 \end{figure}
 
-\subsection{Broadcast制御案の比較と選択}
+  \subsection{Broadcast制御案の比較と選択}
+  \label{sec:l2bcctrl-compare}
 
 案1(\ref{sec:l2bcctrl-plan1})・案2(\ref{sec:l2bcctrl-plan2})のメリット・
 デメリットをまとめてみると\tabref{tab:l2bcctrl_compare}のようになる。本
@@ -356,7 +361,8 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
 \begin{table}[h]
  \caption{L2 Broadcast 制御案 比較}
  \label{tab:l2bcctrl_compare}
- \begin{tabular}{c|p{20em}|p{20em}}
+ \centering
+ \begin{tabularx}{\linewidth}{c|X|X}
   \hline
   案 & メリット & デメリット \\ \hline
   \hline
@@ -364,7 +370,7 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
       & 「パッチパネル」としての動作としては理想的ではない。ブロードキャストが多数あるとパケット複製処理のオーバーヘッドがおおきく性能面での影響が予想される。 \\ \hline
   案2 & 「パッチパネル」として理想的な動作であり不要なブロードキャストの複製を抑制できる。
       & NetTesterのシステム構成のシンプルさに対して実装が複雑になる。 \\ \hline
- \end{tabular}
+ \end{tabularx}
  \end{table}
 
 複数OpenFlowスイッチ・DUTポート単位でのブロードキャスト制御(案2)について
@@ -499,40 +505,49 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
   \centering
   \caption{SSWでVLAN Tag操作をおこなう場合}
   \label{tab:vlan-ctrl-by-ssw}
-  \begin{tabularx}{\linewidth}{p{5em}|p{5em}|c|X|X}
-   \hline
-   Direction & Type & VLAN & Flow rule @SSW & Flow rule @PSW \\
-   \hline
-   \hline
-   Tester to Testee & Unicast \& Broadcast & None
+  \begin{threeparttable}
+   \begin{tabularx}{\linewidth}{p{5em}|p{5em}|c|X|X}
+    \hline
+    Direction & Type & VLAN & Flow rule @SSW & Flow rule @PSW \\
+    \hline
+    \hline
+    Tester to Testee & Unicast \& Broadcast & None
       & (1) \code{in\_port=\#p, actions=out\_port:1}
       & (2) \code{in\_port=1, src\_mac=\#host\_mac, actions=out\_port:\#q} \\
-   \cline{3-5}
-   & & Exist
+    \cline{3-5}
+    & & Exist
       & (3) \code{in\_port=\#p, actions=SetVlanVid:\#v,out\_port:1}
       & \cellcolor{gray}
         (4) \code{in\_port=1, src\_mac=\#host\_mac, vlan\_vid=\#v, actions=out\_port:\#q}, (2)に含まれる。 \\
-   \hline
-   Testee to Tester & Unicast & None
+    \hline
+    Testee to Tester & Unicast & None
       & (5) \code{in\_port=1, dst\_mac=\#host\_mac, actions=out\_port:\#p}
       & (6) \code{in\_port=\#q, actions=out\_port:1} \\
-   \cline{3-5}
-   & & Exist
+    \cline{3-5}
+    & & Exist
       & (7) \code{in\_port=1, dst\_mac=\#host\_mac, vlan\_vid=\#v, actions=StripVlanHeader,out\_port:\#p}
       & \cellcolor{gray}
         (8) \code{in\_port=\#q, dst\_mac=\#host\_mac, vlan\_vid=\#v, actions=out\_port:1}, (6)に含まれる \\
-   \cline{2-5}
-   & Broadcast & None
+    \cline{2-5}
+    & Broadcast & None
       & (9) \code{in\_port=1, dst\_mac=[broadcast], actions=out\_port:FLOOD}, per-switch rule
       & \cellcolor{gray}
         (10) \code{in\_port=\#q, dst\_mac=[broadcast], actions=out\_port:1}, (6)に含まれる \\
-   \cline{3-5}
-   & & Exist
-      & (11) \code{in\_port=1, dst\_mac=[broadcast], vlan\_vid=\#v, actions=StripVlanHeader, out\_port:FLOOD}, per-wire rule, non-tag broadcast rule より優先にならないと tag strip されずにフラッディングされる。
+    \cline{3-5}
+    & & Exist
+      & (11) \code{in\_port=1, dst\_mac=[broadcast], vlan\_vid=\#v, actions=StripVlanHeader, out\_port:FLOOD}, per-wire rule, non-tag broadcast rule (9) より優先にならないと tag strip されずにフラッディングされる。
       & \cellcolor{gray}
         (12) \code{in\_port=\#q, dst\_mac=[broadcast], vlan\_vid=\#v, actions=out\_port:1}, (6)に含まれる \\
-   \hline
-  \end{tabularx}
+    \hline
+   \end{tabularx}
+   \begin{tablenotes}
+    \footnotesize
+    \item \verb|#p, #q|: ポート番号
+    \item \verb|#v|: VLAN ID
+    \item \verb|#host_mac|: テスト用ノードのMACアドレス
+    \item \verb|[broadcast]|: Broadcast MAC Address (\verb|ff:ff:ff:ff:ff:ff|)
+   \end{tablenotes}
+  \end{threeparttable}
  \end{table}
 \end{landscape}
 
@@ -541,51 +556,106 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
   \centering
   \caption{PSWでVLAN Tag操作をおこなう場合}
   \label{tab:vlan-ctrl-by-psw}
-  \begin{tabularx}{\linewidth}{p{5em}|p{5em}|c|X|X}
-   \hline
-   Direction & Type & VLAN & Flow rule @SSW & Flow rule @PSW \\
-   \hline
-   \hline
-   Tester to Testee & Unicast \& Broadcast & None
+  \begin{threeparttable}
+   \begin{tabularx}{\linewidth}{p{5em}|p{5em}|c|X|X}
+    \hline
+    Direction & Type & VLAN & Flow rule @SSW & Flow rule @PSW \\
+    \hline
+    \hline
+    Tester to Testee & Unicast \& Broadcast & None
       & (1) \code{in\_port=\#p, actions=out\_port:1}
       & (2) \code{in\_port=1, src\_mac=\#host\_mac, actions=out\_port:\#q} \\
-   \cline{3-5}
-   & & Exist
+    \cline{3-5}
+    & & Exist
       & (3) \cellcolor{gray}
             \code{in\_port=\#p, actions=out\_port:1}, (1)同様。
       & (4) \code{in\_port=1, src\_mac=\#host\_mac, actions=SetVlanVid:\#v, out\_port:\#q} \\
-   \hline
-   Testee to Tester & Unicast & None
+    \hline
+    Testee to Tester & Unicast & None
       & (5) \code{in\_port=1, dst\_mac=\#host\_mac, actions=out\_port:\#p}
       & (6) \code{in\_port=\#q, actions=out\_port:1} \\
-   \cline{3-5}
-   & & Exist
+    \cline{3-5}
+    & & Exist
       & \cellcolor{gray}
         (7) \code{in\_port=1, dst\_mac=\#host\_mac, vlan\_vid=\#v, actions=out\_port:\#p}, (5)に含まれる。
       & (8) \code{in\_port=\#q, dst\_mac=\#host\_mac, vlan\_vid=\#v, actions=StripVlanHeader,out\_port:1} \\
-   \cline{2-5}
-   & Broadcast & None
+    \cline{2-5}
+    & Broadcast & None
       & (9) \code{in\_port=1, dst\_mac=[broadcast], actions=out\_port:FLOOD}, per-switch rule
       & (10) \code{in\_port=\#q, dst\_mac=[broadcast], actions=StripVlanHeader, out\_port:1}, per-wire rule \\
    \cline{3-5}
    & & Exist
       & \cellcolor{gray}
         (11) \code{in\_port=1, dst\_mac=[broadcast], actions=out\_port:FLOOD}, (9)同様。
-      & (12) \code{in\_port=\#q, dst\_mac=[broadcast], vlan\_vid=\#v, actions=StripVlanHeader,out\_port:1}, per-wire rule, non-tag broadcast rule より優先にならないと tag strip されずにフラッディングされる。 \\
-   \hline
-  \end{tabularx}
+      & (12) \code{in\_port=\#q, dst\_mac=[broadcast], vlan\_vid=\#v, actions=StripVlanHeader,out\_port:1}, per-wire rule, non-tag broadcast rule (10) より優先にならないと tag strip されずにフラッディングされる。 \\
+    \hline
+   \end{tabularx}
+   \begin{tablenotes}
+    \footnotesize
+    \item \verb|#p, #q|: ポート番号
+    \item \verb|#v|: VLAN ID
+    \item \verb|#host_mac|: テスト用ノードのMACアドレス
+    \item \verb|[broadcast]|: Broadcast MAC Address (\verb|ff:ff:ff:ff:ff:ff|)
+   \end{tablenotes}
+  \end{threeparttable} 
  \end{table}
 \end{landscape}
 
 
  \section{フロー優先度設計}
+ \label{sec:flow-priority-design}
  % Table & Rule Priority Design (2015 ool-l1patch) – NetTester
  % https://3.basecamp.com/3088280/buckets/867009/documents/211290387
  % Table & Rule Priority Design (NetTester) – NetTester
  % https://3.basecamp.com/3088280/buckets/867009/documents/217426690
 
- non-tagged broadcast control rule, default rule のはなしをいれる。
- 
+NetTesterはOpenFlow/1.0を使用するため、ひとつのフローテーブル内で優先度
+によるマッチ条件の使いわけをおこなう(\ref{sec:flow-design-premise}参照)。
+一般的には、マッチ項目が多いルール(より複雑なマッチ条件を持つルール)を優
+先させる必要がある。
+
+NetTesterのフロー制御ルールは\tabref{tab:vlan-ctrl-by-ssw}を採用するが、
+VLAN Tagがある場合・ない場合でブロードキャストのルールを使いわけ、Tagを
+はずすアクションを優先して実行する必要がある。そのため、
+\tabref{tab:vlan-ctrl-by-ssw}(11)はVLAN Tagをもたないブロードキャスト制
+御ルールとの優先度をわける。OpenFlowではマッチルールにワイルドカードのよ
+うな機能がないため、使用するVLAN IDそれぞれについてマッチさせる必要があ
+る。
+
+\begin{table}[h]
+ \caption{フロールール優先度設計}
+ \label{tab:flow-priority-design}
+ \centering
+ \begin{threeparttable}
+  \begin{tabularx}{\linewidth}{c|X|X|X}
+   \hline
+   優先度 & フロールール種別
+      & Flow rule @SSW \tnote{1} & Flow Rule @PSW \tnote{1} \\
+   \hline
+   \hline
+   高 & Tagged broadcast/unicast & (3),(7),(11) & (6) \\ \hline
+   中 & Untagged broadcast/unicast & (1),(5),(9) & (2) \\ \hline
+   低 & Layer1(専有モード) & & \\ \hline
+   0(最小) & default(match-any)
+      & \multicolumn{2}{c}{\code{actions=DROP} or \code{actions=CONTROLLER}}\\
+   \hline
+  \end{tabularx}
+  \begin{tablenotes}
+   \footnotesize
+   \item[1] \tabref{tab:vlan-ctrl-by-ssw} No.
+  \end{tablenotes}
+ \end{threeparttable}
+\end{table}
+
+OpenFlow/1.0では、テーブルミス\footnote{フローテーブル内のどのフロールー
+ルにもマッチしない場合。}のとき、デフォルトでコントローラに送信
+(packet-in)される。この動作はこのあとの OpenFlow バージョンでは変更され
+ているため明示的にルールを指定する。別途記載するが、Trema にのパケットパー
+サ(Trema/Pio)で特定のパケットがただしくパースできず、コントローラ停止す
+るバグがあったため、NetTesterでは default DROP を採用している
+\footnote{default CONTROLLER はデバッグ用途で使用することができる。}。
+% TODO: 後述のところうめる。
+
  \section{リンク操作方式}
 
 \begin{itemize}

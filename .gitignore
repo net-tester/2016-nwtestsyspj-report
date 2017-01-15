@@ -8,3 +8,5 @@
 *.gz
 *.fdb_latexmk
 *.pdf
+*.lot
+*.lof
