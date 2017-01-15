@@ -1,7 +1,29 @@
 %% -*- coding: utf-8-unix -*-
 
 \documentclass[uplatex,dvipdfmx,report]{jsbook}
-\usepackage{mymacros} % macros defined myself
+\usepackage{color} % coloring
+\usepackage{array,tabularx,longtable,colortbl} % table
+\usepackage[dvipdfmx,hiresbb]{graphicx} % figure
+\usepackage{float,wrapfig} % figure/table layout
+\usepackage{upquote} % backquote
+\usepackage{lscape} % page landscape change
+
+% macros defined myself
+\usepackage{mymacros}
+
+% href and pdf bookmark
+% https://texwiki.texjp.org/?hyperref
+\usepackage{url} % url
+\usepackage[dvipdfmx]{hyperref}
+\usepackage{pxjahyper}
+\hypersetup{%
+ bookmarksnumbered=true,%
+ bookmarksopen=true,%
+ bookmarksdepth=3,%
+ colorlinks=true,%
+ setpagesize=false,%
+ pdftitle={ネットワークテストシステム プロジェクト 2016年度 成果報告書},%
+ pdfauthor={ネットワークテストシステム プロジェクトチーム}}
 
 \begin{document}
 \title{ネットワークテストシステム プロジェクト \\ 2016年度 成果報告書}

@@ -277,10 +277,10 @@ Should TDD and BDD be used in conjunction? - Stack Overflow
 る。
 
 \ref{sec:difficulty} で示したように、特に物理構成要素の操作は自動化がむ
-ずかしい。本プロジェクトの前身であるL1patchプロジェクトでは、OpenFlow ス
-イッチを応用したテスト対象ネットワークの物理トポロジ構成・操作についての
-実証実験を行なった~\cite{l1pjpoc}。本プロジェクトではそこで実証した技術を
-応用してテスト対象ネットワークの物理トポロジ操作をおこなう。
+ずかしい。\lopjc では、OpenFlow スイッチを応用したテスト対象ネットワーク
+の物理トポロジ構成・操作についての実証実験を行なった。本プロジェクトでは
+そこで実証した技術を応用してテスト対象ネットワークの物理トポロジ操作をお
+こなう。
 
     \paragraph{テスト用ノード操作}
 \tabref{tab:test-functions} No.4-5 はテスト用ノードの操作である。一般的
@@ -300,11 +300,10 @@ Should TDD and BDD be used in conjunction? - Stack Overflow
  \item テスト用ノードの配置(テスト対象NWへの接続)の手間
 \end{itemize}
 
-トポロジ操作同様に、本プロジェクトの前身であるL1patchプロジェクトでは、
-Linux Namespace を利用したテスト用ノードの生成・集中制御とOpenFlow スイッ
-チを応用したテスト用ノード配置についての実証実験を行なった~\cite{l1pjpoc}。
-本プロジェクトではそこで実証した技術を応用して、より実用的なテストユース
-ケース(テストシナリオ)の実現をおこなう。
+トポロジ操作同様に、\lopjc では、Linux Namespace を利用したテスト用ノー
+ドの生成・集中制御とOpenFlow スイッチを応用したテスト用ノード配置につい
+ての実証実験を行なった。本プロジェクトではそこで実証した技術を応用して、
+より実用的なテストユースケース(テストシナリオ)の実現をおこなう。
 
  \section{基本的なアイディア}
  \label{sec:basic-tester-idea}
@@ -314,10 +313,12 @@ Linux Namespace を利用したテスト用ノードの生成・集中制御とO
   % NetTester の基本的なアイディアというか、
   % そもそものパッチパネルベースにテストをやるっていう話
 
+  % https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view
+  % にある「もうちょっと一般化」くらいの粒度でいれてもいいかもしれない。
+
 \ref{sec:discuss-network-test}節でネットワークのテスト自動化のために必要
 な機能要素について解説したが、それらをもとにネットワーク「テスタ」に求め
-られる機能要求について解説する。要求についてはL1patchプロジェクト技術報
-告書~\cite{l1pjtech}も参照のこと。
+られる機能要求について解説する。要求については \lopjtech も参照のこと。
 
 ネットワークのテスト自動化では、従来手作業でおこなっていたのと同等の操作
 を、ソフトウェアにより自動的かつプログラマブルに実現したい。そのために、
@@ -335,16 +336,15 @@ Linux Namespace を利用したテスト用ノードの生成・集中制御とO
  \label{fig:basic-idea}
 \end{figure}
 
-L1patchプロジェクト~\cite{l1pjpoc}では、安価かつトラフィック制御を自分で
-操作(プログラミング)可能なOpenFlowスイッチを利用して、物理配線操作をする
-パッチパネルと同等のものを実現し(\figref{fig:poc-l1patchpj}:
-\tabref{tab:test-functions}参照)、簡単なテストユースケースのもとで有効性
-を確認した。
+\lopjc では、安価かつトラフィック制御を自分で操作(プログラミング)可能な
+OpenFlowスイッチを利用して、物理配線操作をするパッチパネルと同等のものを
+実現し(\figref{fig:poc-l1patchpj}: \tabref{tab:test-functions}参照)、簡
+単なテストユースケースのもとで有効性を確認した。
 
 \begin{figure}[h]
  \centering
  \includegraphics[scale=0.5]{img/poc-l1patchpj.png}
- \caption{2015年度L1patchプロジェクトPoCで実装・実証した機能要素}
+ \caption{\lopj PoCで実装・実証した機能要素}
  \label{fig:poc-l1patchpj}
 \end{figure}
 
@@ -354,14 +354,13 @@ L1patchプロジェクト~\cite{l1pjpoc}では、安価かつトラフィック�
    % \url{https://3.basecamp.com/3088280/buckets/867009/documents/208275139}
    % いるか??
 
- 本プロジェクトは、L1patchプロジェクトの結果をもとに、
- NetTester~\cite{nettester} というテストツールを開発した。NetTester につ
- いては~\ref{chap:nettester-design}章で解説する。また、NetTesterをつかっ
- たネットワークテストのユースケース実証については~\ref{chap:poc}章で解説
- する。
+ 本プロジェクトは、\lopj の結果をもとに、NetTester~\cite{nettester} とい
+ うテストツールを開発した。NetTester について
+ は~\ref{chap:nettester-design}章で解説する。また、NetTesterをつかったネッ
+ トワークテストのユースケース実証については~\ref{chap:poc}章で解説する。
 
 
 %%% Local Variables:
 %%% mode: yatex
-%%% TeX-master: main.tex
+%%% TeX-master: "main.tex"
 %%% End:

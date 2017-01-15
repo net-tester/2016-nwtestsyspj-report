@@ -1,16 +1,10 @@
 %% -*- coding: utf-8-unix -*-
 
-\usepackage{array,tabularx,longtable} % table
-\usepackage[dvipdfmx,hiresbb]{graphicx} % figure
-\usepackage{float,wrapfig} % figure/table layout
-\usepackage{upquote} % backquote
-
 % program list
 % ref: http://www.biwako.shiga-u.ac.jp/sensei/kumazawa/tex/listings.html
 % ref: http://d.hatena.ne.jp/Kshi_Kshi/20110219/1298117610
 % ref: http://qiita.com/ayihis@github/items/c779e4ab5cd7580f1f87
 \usepackage{listings}
-\usepackage{color}
 \lstset{
   breaklines=true,
   language=Ruby,
@@ -38,12 +32,6 @@
 % for colored text box
 \usepackage{tikz}
 \usepackage[framemethod=tikz]{mdframed}
-
-% href and pdf bookmark
-\usepackage{url} % url
-\usepackage[dvipdfmx,bookmarksopen,bookmarksdepth=3]{hyperref}
-\usepackage{pxjahyper}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Macro definitions
@@ -79,6 +67,12 @@
 \newcommand{\figref}[1]{図~\ref{#1}}
 \newcommand{\tabref}[1]{表~\ref{#1}}
 \newcommand{\lstref}[1]{リスト~\ref{#1}}
+
+% citation alias (macro)
+\newcommand{\lopj}{L1patchプロジェクト} % wo/cite
+\newcommand{\lopjc}{L1patchプロジェクト~\cite{l1pjpoc,l1pjtech}} % w/cite
+\newcommand{\lopjpoc}{\lopj 活動報告書~\cite{l1pjpoc}}
+\newcommand{\lopjtech}{\lopj 技術情報~\cite{l1pjtech}}
 
 % QA: listingsパッケージのtitleオプションについて
 % http://oku.edu.mie-u.ac.jp/tex/mod/forum/discuss.php?d=1543
