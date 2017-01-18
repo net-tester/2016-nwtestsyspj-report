@@ -63,3 +63,25 @@ sudo apt install yatex
 
 Set `tex-command` to use `latexmk` (and `uplatex`).
 Set `tex-pdfview-command` to `evince` to preview output(pdf).
+
+### SyncTex settings (Linux + emacs/yatex + evince)
+
+Download `fwdevince` (from [Evince/fwdevince/Python - TeX Wiki](https://texwiki.texjp.org/?Evince%2Ffwdevince%2FPython))
+
+Notice: Use Python3 with shebang line
+```
+#!/usr/bin/env python3
+```
+
+install
+```
+chmod +x fwdevince
+sudo cp -p fwdevince /usr/local/bin
+sudo ln -s /usr/local/bin/fwdevince /usr/local/bin/invevince
+```
+
+and edit `.emacs.el` (see: [うぶつん: SyncTeXの設定。 Emacs\(YaTeX\) \+ Evince](https://ubutun.blogspot.jp/2012/05/synctex-emacsyatex-evince.html))
+
+Jump!
+- forward search (from emacs to evince) : `C-c e` (`M-x evince-forward-search`)
+- inverse search (from evince to emacs) : Control + Left-click

@@ -3,6 +3,11 @@
 \chapter{NetTesterの技術仕様}
 \label{chap:nettester-design}
 
+\ref{chap:nettester-design}章では、本プロジェクトでNetTesterに実装した
+「パッチ」動作とフロー制御方式について解説する。テスト用ノードの操作につ
+いてはTrema/Phutを利用して実装されている。Phutの使いかたやNetTesterでの
+応用については\ref{sec:phut_basics}を参照のこと。
+
  \section{NetTesterのモデル}
  \label{sec:nettester-model}
 
@@ -42,9 +47,10 @@
  \item[物理スイッチ(OFS)] パッチパネルとして動作させるOpenFlowスイッチ
             \footnote{本書あるいはNetTester関連ドキュメント中では ''物理
             OpenFlowスイッチ'',``Physical (OpenFlow) Switch'',''PSW''な
-            どで表記される。}。テスト対象ネットワークのトポロジ操作やテ
-            スト用ノードの配置などをおこなう、物理ポートを複数もつスイッ
-            チである。
+            どで表記される。実装上はPica8スイッチを使用していることから、
+            単に''Pica8''とすることがある。}。テスト対象ネットワークのト
+            ポロジ操作やテスト用ノードの配置などをおこなう、物理ポートを
+            複数もつスイッチである。
  \item[ソフトウェアスイッチ(OVS)] パッチパネルとして動作させるOpenFlowス
             イッチ\footnote{本書あるいはNetTester関連ドキュメント中では、
             ``Software (OpenFlow) Switch'',''SSW''などで表記される。ある
@@ -71,13 +77,18 @@
   \subsection{構成上の制限・制約}
   \label{sec:nettester-model-restriction}
 
-現時点(2016年1月)のNetTesterでは、\figref{fig:model-nettester}のようにモ
-デルを定義した。このモデル定義では、以下のようなテストシステム構成上の制
-限や制約がある。
+PoC実施時点\footnote{2016年10月-12月}のNetTesterでは、
+\figref{fig:model-nettester}のようにモデルを定義した。このモデル定義では、
+以下のようなテストシステム構成上の制限や制約がある。
 \begin{itemize}
  \item NetTester が制御可能な物理スイッチはひとつだけである。そのため、
        テスト対象ネットワークで操作可能なリンクやテスト用ノード配置可能
        な範囲は物理スイッチの持つポート数を上限として制限される。
+       %% TODO: ポート番号とかまでいれた詳細なモデル(図)をいれる?
+       %% テスト用ノードのNICまわりとかの話(モデル)までいれる?
+       % DPIDや一部のポート番号の固定について
+       % NetTesterの実装で気になるところ – NetTester
+       % \url{https://3.basecamp.com/3088280/buckets/867009/todos/196940380}
  \item NetTester が制御可能なソフトウェアスイッチはひとつだけである。ま
        た、NetTester は NetTester が実行されるOS上でのみテスト用ノードの
        生成・操作ができる。
@@ -378,6 +389,73 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
 複雑なシステム構成、拡張性が必要になった際は、案2を使用して制御ロジック
 を再実装することで実現が可能である。
 
+  \subsection{フロー制御設計の注意事項}
+  % https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view
+  % 図, 補足: bcast/案1派生のところ。
+  % フロールールから: arp があるていどみえてしまうこと → セキュリティについて?
+
+  \paragraph{Broadcast制御の選択肢}
+
+テスト対象ネットワーク(Testee)からテスト用ノード(Tester)へ送信されるブロー
+ドキャストの複製についてみてきた。検討点としてはTesterからTesteeへのブロー
+ドキャストについて、ソフトウェアスイッチ内で複製させることも可能である
+(\figref{fig:bcctrl_another_pattern})。
+
+\begin{figure}[h]
+ \centering
+ \includegraphics[scale=0.6]{img/l2bcctrl_another_pattern.png}
+ \caption{テスト用ノードのブロードキャスト制御パターン}
+ \label{fig:bcctrl_another_pattern}
+\end{figure}
+
+\figref{fig:bcctrl_another_pattern}ではソフトウェアスイッチ(OVS)では入力
+ポート(\code{in\_port})条件を指定せず、ブロードキャストを常にフラッディ
+ングする。フロー制御ルールとしてはよりシンプルになるが、今回は以下の理由
+からソフトウェアスイッチ内でのブロードキャスト折り返しは採用していない。
+\begin{itemize}
+ \item ソフトウェアスイッチ内だけでなく、テスト対象ネットワーク内でもブ
+       ロードキャストが複製され、テスト用ノードに多数の(不用な)ブロード
+       キャストフレームがコピーされる。
+ \item 「パッチパネル」をモデルとしたトラフィック制御をしているため、理
+       想としては、ある「パッチ」でやりとりされているデータは異なる「パッ
+       チ」で接続されるノードには見えてはいけない。
+ \item テスト対象ネットワーク内でブロードキャストが正しくおこなわれ、テ
+       スト用ノードに送信されるかどうかも、テストとして確認したいことに
+       含まれる。本来テスト対象ネットワークでおこなわれるべき処理を、テ
+       ストシステム(ソフトウェアスイッチ)側で代行してしまうのは、「ネッ
+       トワークのテスト」という目的からは避けなければいけない。
+       \footnote{ソフトウェアスイッチでテスト用ノード間のブロードキャス
+       ト折り返しを許可してしまうと、テスト対象ネットワーク側の不具合な
+       どでL2の接続ができない状態になっていても、あるテスト用ノードから
+       隣にいるテスト用ノードのMACが見えるという状況が発生し得る。これは
+       従来の、独立した機器をテスト対象に直接結線していた状況では発生し
+       ない。テストシステムとしては、「本来パッチパネルで直接接続されて
+       いたときに想定されること」を再現することが望ましい。}
+ \item ソフトウェアスイッチと物理スイッチの間のリンクについて、NetTester
+       では1本と設定しているが、複数本に拡張するとL2ループとなる。構成次
+       第ではあるが、無条件のフラッディングはブロードキャストストームに
+       発展しやすいというリスクがある。
+\end{itemize}
+
+\paragraph{設計上の注意事項}
+
+テストシステムとしては「パッチパネル」でテスト対象にテスト用ノードを直接
+接続した状況を忠実に再現できることが理想である。しかし、今回選択したフロー
+制御ルール((\ref{sec:l2bcctrl-plan1},案1)では、テスト対象ネットワークか
+らテスト用ノードへのブロードキャストについては本来の「パッチパネル」の動
+作からははずれた動作をする。具体的には、あるテスト用ノードが接続されてい
+る「パッチ」には流れないはずのブロードキャストも、ソフトウェアスイッチで
+複製されてしまう。そのため、本来見えないはずの隣接ノードの情報(MACアドレ
+ス)なども見えてしまう。
+
+本プロジェクトでは、PoC(ユースケースの実証)を主要な目的とし、実装上は可
+能な限りシンプルにすることを方針としたため、こうした動作については許容す
+ることとした。また、\lopjc ではwire-groupによるブロードキャスト範囲の制
+限を試みており、より詳細なコントロールも可能であることも理由として挙げら
+れる。
+% TODO, ref:PoC
+
+
  \section{トラフィック転送とVLANの制御設計}
  \label{sec:vlan-ctrl}
 
@@ -460,8 +538,8 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
 ロードキャストの複製・転送先を判断する必要がある
 (\figref{fig:vlan-testee2tester-bcplan1})。
 
-ブロードキャスト制御案1(\ref{sec:l2bcctrl-plan1}参照)を採用するため、ソ
-フトウェアスイッチに設定するブロードキャスト制御のルールは、原則
+ブロードキャスト制御として案1(\ref{sec:l2bcctrl-plan1}参照)を採用するた
+め、ソフトウェアスイッチに設定するブロードキャスト制御のルールは、原則
 \verb|in_port=1, actions=FLOOD|のルールのみとなる。
 \begin{figure}[h]
  \centering
@@ -635,7 +713,7 @@ VLAN Tagがある場合・ない場合でブロードキャストのルールを
    \hline
    高 & Tagged broadcast/unicast & (3),(7),(11) & (6) \\ \hline
    中 & Untagged broadcast/unicast & (1),(5),(9) & (2) \\ \hline
-   低 & Layer1(専有モード) & & \\ \hline
+   低 & Layer1 \tnote{2} & & \\ \hline
    0(最小) & default(match-any)
       & \multicolumn{2}{c}{\code{actions=DROP} or \code{actions=CONTROLLER}}\\
    \hline
@@ -643,6 +721,7 @@ VLAN Tagがある場合・ない場合でブロードキャストのルールを
   \begin{tablenotes}
    \footnotesize
    \item[1] \tabref{tab:vlan-ctrl-by-ssw} No.
+   \item[2] 「専有モードワイヤ」(\ref{sec:flow-design-grouping})
   \end{tablenotes}
  \end{threeparttable}
 \end{table}
@@ -651,41 +730,72 @@ OpenFlow/1.0では、テーブルミス\footnote{フローテーブル内のど�
 ルにもマッチしない場合。}のとき、デフォルトでコントローラに送信
 (packet-in)される。この動作はこのあとの OpenFlow バージョンでは変更され
 ているため明示的にルールを指定する。別途記載するが、Trema にのパケットパー
-サ(Trema/Pio)で特定のパケットがただしくパースできず、コントローラ停止す
-るバグがあったため、NetTesterでは default DROP を採用している
-\footnote{default CONTROLLER はデバッグ用途で使用することができる。}。
-% TODO: 後述のところうめる。
+サ(Trema/Pio)で特定のパケットがパースできず、コントローラが停止するバグ
+があったため、NetTesterでは default DROP を採用している\footnote{default
+CONTROLLER はデバッグ用途で使用することができる。}。
+% TODO: 「後述」のところうめる。
 
- \section{リンク操作方式}
+  \section{リンク操作方式}
+  \label{sec:link-operation}
 
+  % テスト対象NW機器間接続のup/down方式を決める – NetTester
+  % \url{https://3.basecamp.com/3088280/buckets/867009/todos/238171702}
+  % リンクダウン・リンクアップ機能用のスクリプト実装 – NetTester
+  % \url{https://3.basecamp.com/3088280/buckets/867009/todos/247379766}
+
+  % https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view
+  % 図、NW機器間接続
+
+\tabref{fig:features-of-network-testing} No.3では物理リンク(物理トポロジ)操
+作をあげた。これは、複数のポートをつなぎあわせて(「パッチ」して)テスト対
+象ネットワークの物理トポロジを構成するという観点だけでなく、テスト中に発
+生する物理リンク操作という観点も含まれる(\ref{sec:behavior-to-test}節
+「動的なふるまい」参照)。ここでは「動的なふるまい」のテストのための物理
+リンク操作方法について解説する。
+
+テスト対象ネットワークでは\figref{fig:patch-layer1}のように、物理
+OpenFlowスイッチを仲介させることで物理トポロジ操作を可能にする。このとき、「動的なふるまい」を発生させるために、NW機器間のリンクを操作する。あたらしくリンクを追加する場合は同様に物理OpenFlowスイッチへの結線とフロールールの追加をおこなう。リンクを削除する場合には以下の2パターンが考えられる。
+\begin{description}
+ \item[直接リンクダウン] 物理OpenFlowスイッチのポート自体をup/downさせる
+            ことでリンクを操作する。この場合、テスト対象ネットワーク機器
+            側でもポートのup/downを直接検出することができる。
+ \item[関節リンクダウン] 物理OpenFlowスイッチで、リンクを成立させている
+            ポート間マッピングのためのフロールールをadd/deleteスル。この
+            場合、テスト対象ネットワーク機器側ではリンクの状態変更
+            (up/down)は発生せず、トラフィックが送受信できない状態となる。
+\end{description}
+
+\begin{figure}[h]
+ \centering
+ \includegraphics[scale=0.6]{img/patch-layer1.png}
+ \caption{テスト対象の物理トポロジ操作}
+ \label{fig:patch-layer1}
+\end{figure}
+
+本プロジェクトでは、PoCとして、最も基礎となる「動的なふるまい」とそのテ
+ストをターゲットとし、リンク障害試験をそのユースケースとしてとりあげた。
+リンク障害は通常、テスト対象ネットワーク内(該当するリンクをもつネットワー
+ク機器)でポートのup/downを検出するため、直接リンクダウン方式を採用する。
+
+直接リンクダウンの実装としては、以下の2つの方法がある。
 \begin{itemize}
- \item テスト対象NW機器間接続のup/down方式を決める – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/238171702}
- \item リンクダウン・リンクアップ機能用のスクリプト実装 – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/247379766}
+ \item 物理OpenFlowスイッチ上でポート状態操作コマンドを実行する。
+ \item OpenFlow Message (PortMod) を物理OpenFlowスイッチに送信し、ポート
+       状態変更操作をおこなう。
 \end{itemize}
+今回、NetTester では、物理OpenFlowスイッチにExpectベースのツール
+(\ref{sec:expectacle})でログイン/コマンド実行し、直接スイッチ上でポート
+状態変更する方法をとった。これは、PoC実施時点\footnote{2016年10月-12月}
+のTremaではまだPortModメッセージの送信が実装されていなかったためである。
 
-\section{制限・制約}
+%% TODO/あと、以下のはなしどうする?
 
-フロールールから: arp があるていどみえてしまうこと → セキュリティについて?
+% NetTester 自体の通信要件?
+% \begin{itemize}
+%  \item openflow, ssh, syslog 等
+% \end{itemize}
 
-%% https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view
-テスト対象側で複製された(a)(b)複数が飛んじゃう。
-他のセグメントのbroadcastも飛んじゃう。(Seg2用のtest nodeがあったとしたらSeg1のbroadcastがそっちにも飛ぶ。)
-→ "patch"というモデルだとしてbroadcastが変に飛びまくるのは好ましくない。
-→ test nodeやNetTester Serverのパフォーマンス(パケット処理)としてあまり好ましくない。
-→ 本番NWだとセキュリティ的にも問題(ほかのセグメントに何がいるのかが見える)
-「テストだから」というのを入れるにせよ、どこまで許すか?
-%%
-
-DPIDや一部のポート番号の固定について
-\begin{itemize}
- \item NetTesterの実装で気になるところ – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/196940380}
-\end{itemize}
-
-NetTester 自体の通信要件?
-\begin{itemize}
- \item openflow, ssh, syslog 等
-\end{itemize}
-
+% 複数プロセス同時実行とかの技術使用ベースの話とかはどこで書く?
 
 %%% Local Variables:
 %%% mode: yatex
