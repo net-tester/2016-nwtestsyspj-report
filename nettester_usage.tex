@@ -1,49 +1,135 @@
 %% -*- coding: utf-8-unix -*-
 
 \chapter{NetTesterの使いかた}
+\label{chap:nettester-usage}
 
-\section{インストール}
+ \section{NetTesterのデプロイ}
+ \label{sec:nettester-deployment}
 
-デプロイの方法
+  \subsection{物理OpenFlowスイッチ}
+  \label{sec:nettester-deploy-psw}
 
+  % 物理OFSのデプロイ
+  % - pica8 (OVS) の設定について
+  %   - Portの設定(VLAN) : [L1PJTECH] 参照
+  %   - \code{fail\_mode} の設定
+  %     \url{https://docs.google.com/document/d/1yBn8S3DOhkuaVuVtUmwOeyvQxWm1v6_PfWTj3iDcx0U/}
+  %   - inactivity probe の設定:
+  %     調査: テスト環境でOFS(Pica8)-OFC(NetTester/Trema)の接続が切れる – NetTester
+  %     \url{https://3.basecamp.com/3088280/buckets/867009/todos/218484578}
+  %     \url{https://docs.google.com/document/d/1_-pLOXSOLutRb1_-tlcb_FwLCHq3Y7zQxp79_qXjDiM/}
+  %     (そんなに重要じゃないけど一応)
+
+\ref{sec:nettester-model}節に示したとおり、NetTester は1台の物理OpenFlow
+スイッチを利用して、テスト対象ネットワークへの接続をおこなう(物理
+OpenFlowスイッチを使用してテストトラフィックを''distribute''する)。本節
+では物理OpenFlowスイッチの選択と設定について解説する。
+
+% NetTesterが使用する物理OpenFlowスイッチには\tabref{tab:ofs-requirement}
+% の要件が求められる~\cite{l1pjpoc}。
+
+\begin{table}[h]
+ \centering
+ \caption{OpenFlowスイッチ要件(OpenFlow/1.0)}
+ \label{tab:ofs-requirement}
+ \begin{tabular}{l|l}
+  \hline
+  分類 & 項目 \\
+  \hline
+  \hline
+  Match  & In-Port \\ \cline{2-2}
+         & VLAN ID \\ \cline{2-2}
+         & Source/Destination MAC Address \\ \hline
+  Action & Out-Port \\ \cline{2-2}
+         & Push/Pop VLAN ID \\ \hline
+  Priority & Priority \\
+  \hline
+ \end{tabular}
+\end{table}
+
+本プロジェクトでは昨年度実施した \lopj の環境を継続しており、
+\tabref{tab:psw-list}に示すOpenFlowスイッチを使用している~\cite{l1pjpoc}。
+(2台のOpenFlowスイッチを使用して Tester set を2セット構築している。)
+% TODO: Tester set の説明
+
+\begin{table}[h]
+ \centering
+ \caption{物理OpenFlowスイッチ}
+ \label{tab:psw-list}
+  \begin{tabular}{l|l|l}
+   \hline
+   Host name & Hardware & OS/Version \\
+   \hline
+   \hline
+   OFS1 & Quanta T1048-LB9 & PicOS 2.5.2 / Revision 19975 \\
+   OFS2 & Pica8 P-3290 & PicOS 2.2.1S3 / Revision 14775 \\
+   \hline
+ \end{tabular}
+\end{table}
+% TODO: 昨年度ドキュメントそのまま。現物確認すること
+% TODO: OVS version を追記すること。
+
+PicOSはOVS Mode (Open vSwitch)で使用する。PicOS OVSでは以下の設定をおこ
+なう。下記設定事項についてはPicOSマニュアルおよびOpen vSwitchドキュメン
+ト\footnote{ovs-vswitchd.conf.db.5.txt
+\url{http://openvswitch.org/support/dist-docs/ovs-vswitchd.conf.db.5.txt}}
+も参照すること。
 \begin{itemize}
- \item 物理OFSのデプロイ
+ \item パッチとして使用するすべてのポートの設定~\cite{l1pjtech}
        \begin{itemize}
-        \item pica8 (OVS) の設定について
-              \begin{itemize}
-               \item Portの設定(VLAN) : [L1PJTECH] 参照
-               \item \code{fail\_mode} の設定 : \url{https://docs.google.com/document/d/1sYozdBu4Lq3ahH7NNZlova2NQhn8N5BKFTVlP*xBzUY/}
-               \item inactivity probe の設定: 調査: テスト環境でOFS(Pica8)-OFC(NetTester/Trema)の接続が切れる – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/218484578} , \url{https://docs.google.com/document/d/1_-pLOXSOLutRb1_-tlcb_FwLCHq3Y7zQxp79_qXjDiM/}
-                     (そんなに重要じゃないけど一応)
-              \end{itemize}
+        \item VLANの操作をおこなうため、VLAN Mode を trunk として設定
+              (\verb|vlan_mode=trunk|)する:
+        \item テスト対象ネットワークで発生するブロードキャスト転送の抑制・
+              STPへの干渉をさけるため、フラッディングの無効化
+              (\verb|no-flood|)およびSTPの無効化(\verb|no-stp|)を設定す
+              る。
        \end{itemize}
- \item NetTester Server のセットアップ
+ \item 物理OpenFlowスイッチ(OVS Bridge)全体の設定
        \begin{itemize}
-        \item NetTesterモデルの制約とサーバ構成の選択肢
-              \begin{itemize}
-               \item 必要なNIC
-               \item ベアメタル
-               \item KVM による仮想化, その場合のNIC設定
-              \end{itemize}
-        \item 必要なソフトウェア(package)とインストール
-              \begin{itemize}
-               \item 基本的なパッケージ
-                     \begin{itemize}
-                      \item Git
-                      \item Build-Essentials
-                      \item テストシナリオでつかうもの (nc, dnsmasqなど)
-                     \end{itemize}
-               \item OSの設定
-                     \begin{itemize}
-                      \item sudoers secure\_path
-                     \end{itemize}
-               \item open vswitch
-               \item ruby, rubyenv
-              \end{itemize}
-        \item シナリオ (net-tester/examples) のインストール
-        \item NetTester のインストール
+        \item BridgeでSTPを処理しない(\verb|stp_enable=false|)。
+        \item コントローラ(OFC)との接続が切断された際にテスト対象ネット
+              ワークから届くトラフィックを処理しない
+              (\verb|fail_mode=secure|)\footnote{\code{fail\_mode}には
+              secureとstandaloneの2種類がある。Standaloneを指定した場合、
+              OFS(OVS Bridge)はOFCとの接続がきれた際に独立したL2スイッチ
+              (Learning Switch)として動作する。テスト対象ネットワークと
+              の物理結線がある状態でL2スイッチとして動作してしまうと、テ
+              スト対象ネットワークをまきこんでL2ループが発生してしまうた
+              め注意が必要である。}\footnote{PicOSでは、PicOSバージョン
+              が異なると(PicOS上のOVSのバージョンが同一でも)OVSの
+              \code{fail\_mode}デフォルト設定が異なっているため注意が必
+              要である。利用する場合は明示的に\code{fail\_mode=secure}を
+              設定すること。}。
+        \item (Optional) 物理OpenFlowスイッチとOFC(NetTester OFC)との接
+              続がタイミングにより切断されるなどの現象がある場合には、
+              Inactivity probe の値を調整する。
        \end{itemize}
 \end{itemize}
+
+  
+  \subsection{NetTester Server の構成選択}
+  \label{sec:nettester-server-deploy-pattern}
+
+  % NetTesterモデルの制約とサーバ構成の選択肢
+  % - 必要なNIC
+  % - ベアメタル
+  % - KVM による仮想化, その場合のNIC設定
+
+  \subsection{NetTester Server のソフトウェアスタック}
+
+  % 必要なソフトウェア(package)とインストール
+  % - 基本的なパッケージ
+  %   - open vswitch
+  %   - ruby, rubyenv
+  %   - Git
+  %   - Build-Essentials
+  %   - テストシナリオでつかうもの (nc, dnsmasqなど)
+  % - OSの設定
+  %   - sudoers secure\_path
+
+  \subsection{テストシナリオ (net-tester/examples)}
+
+  \subsection{NetTester}
 
 \section{基本的な使い方}
 
