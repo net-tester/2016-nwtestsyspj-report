@@ -115,6 +115,89 @@ PicOSはOVS Mode (Open vSwitch)で使用する。PicOS OVSでは以下の設定�
   % - ベアメタル
   % - KVM による仮想化, その場合のNIC設定
 
+NetTesterサーバは物理OpenFlowと物理リンクで直結される必要がある。サーバ
+の構成方法として、ベアメタル構築する場合と仮想マシンで構築する場合の注意
+事項について解説する。
+
+\paragraph{ベアメタル構成}
+NetTesterサーバをベアメタルで構成する場合は
+\figref{fig:nettester-deploy-baremetal}のようになる。
+\ref{sec:nettester-model}節に示したとおり、NetTesterサーバと物理スイッチ
+(PSW)間は物理リンクで直結される必要がある。また、OpenFlowチャネルや
+NetTester-PSW間の制御・管理通信のために、NetTesterサーバとPSWは管理ネッ
+トワークを介して通信をおこなう。
+\begin{figure}[h]
+ \centering
+ \includegraphics[scale=0.6]{img/nettester-deploy-baremetal.png}
+ \caption{ベアメタル構成}
+ \label{fig:nettester-deploy-baremetal}
+\end{figure}
+
+\paragraph{仮想マシン構成}
+NetTesterサーバを仮想マシンとして構成する場合は
+\figref{fig:nettester-deploy-vm}のようになる。管理ネットワークについては
+ベアメタル構成の場合と同様にL2/L3でPSWとのコネクティビティがとれればよい。
+NetTester(SSW)-PSW間の接続については、ホストOS側で物理ポート(リンク)を
+NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTester)によっ
+て制御するため、ハイパーバイザ側ではL2以上の制御はおこなわない。パススルー
+あるいはプロミスキャスモードで接続する。
+
+\begin{figure}[h]
+ \centering
+ \includegraphics[scale=0.6]{img/nettester-deploy-vm.png}
+ \caption{仮想マシン構成}
+ \label{fig:nettester-deploy-vm}
+\end{figure}
+
+本プロジェクトは仮想マシン構成を採用した。PoCでは
+\tabref{tab:server-spec}に示すサーバを使用している。SSW-PSW間接続では、
+ハイパーバイザ(KVM Host)が持つ物理NICを直接仮想マシンに接続
+(\code{macvtap/passthrough})させる(\lstref{lst:kvmconf-psw-port})。管理
+ネットワークについては bridge 接続でよい(他のVMやハイパーバイザとL2で接
+続する, \lstref{lst:kvmconf-mgmt-port})。
+
+\begin{table}[h]
+ \centering
+ \caption{サーバ情報}
+ \label{tab:server-spec}
+ \begin{tabularx}{\linewidth}{l|X|X}
+  \hline
+  Host & OS & Virtualization \\
+  \hline
+  \hline
+  \shortstack[l]{Hypervisor\\(KVM Host)}
+    & \shortstack[l]{Ubuntu 14.04.5 LTS\\(GNU/Linux 3.16.0-30-generic x86\_64)}
+    & \shortstack[l]{qemu-kvm/2.0.0+dfsg-2ubuntu1.25,\\libvirt/1.2.2-0ubuntu13.1.17} \\
+  \hline
+  \shortstack[l]{NetTester Server\\(VM)}
+    & \shortstack[l]{Ubuntu 16.04.1 LTS\\(GNU/Linux 4.4.0-31-generic x86\_64)}
+    & \\
+  \hline
+ \end{tabularx}
+\end{table}
+
+\begin{lstlisting}[language=xml,caption=PSW接続用ポート設定,label=lst:kvmconf-psw-port]
+<interface type='direct'>
+  <mac address='52:54:00:12:56:0e'/>
+  <source dev='em1' mode='passthrough'/>
+  <target dev='macvtap1'/>
+  <model type='virtio'/>
+  <alias name='net1'/>
+  <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+</interface>
+\end{lstlisting}
+\begin{lstlisting}[language=xml,caption=管理ポート設定,label=lst:kvmconf-mgmt-port]
+<interface type='bridge'>
+  <mac address='52:54:00:64:ee:38'/>
+  <source bridge='br0'/>
+  <target dev='vnet2'/>
+  <model type='virtio'/>
+  <alias name='net0'/>
+  <address type='pci' domain='0x0000' bus='0x00' slot='0x02' function='0x0'/>
+</interface>
+\end{lstlisting}
+
+
   \subsection{NetTester Server のソフトウェアスタック}
 
   % 必要なソフトウェア(package)とインストール
