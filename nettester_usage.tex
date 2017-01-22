@@ -480,10 +480,12 @@ NetTesterを使ったネットワークのテスト操作は次のステップ�
        \begin{itemize}
         \item \verb|NetTester.kill|
         \item NetTesterが生成したSSW, テスト用ノードなどを削除する。テス
-              ト用ノード(verb|NetTester::Netns|)の実態は network
-              namespace であるため、OS上に設定が残る。適切な終了(削除)処
-              理がおこなわれない場合、OS上にこれらの設定が残りつづけてし
-              まうため注意が必要である。
+              ト用ノード(\verb|NetTester::Netns|)の実態は network
+              namespace であるため、NetTsterプロセスが消去されてもOS上に
+              設定が残る。適切な終了(削除)処理がおこなわれない場合、OS上
+              にこれらの設定が残りつづけてしまう(他のテストシナリオ実行
+              時に同名のnamespaceを作成しようとするとエラーになる)ため注
+              意が必要である。
        \end{itemize}
 \end{enumerate}
 
