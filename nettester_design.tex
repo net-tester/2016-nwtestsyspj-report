@@ -100,6 +100,10 @@ PoC実施時点\footnote{2016年10月-12月}のNetTesterでは、
        フトウェアスイッチ間を接続するための物理リンク/ポートを他の仮想マ
        シンと共有させない。)
        %% TODO: Tester Set の定義をどこかにいれるべき?
+ \item ソフトウェアスイッチのDatapath ID (DPID)を固定している(SSW
+       DPID=\code{0xdad1c001}\footnote{''dady cool''})。物理スイッチの
+       DPIDは環境変数により実行時指定が可能である
+       (\ref{sec:nettester-envvar}参照)。
 \end{itemize}
 これらのモデル定義および制限の設定は、NetTester 実装をシンプルにするため
 のものである。本プロジェクトでは、NetTester それ自体の機能拡張や拡張性の

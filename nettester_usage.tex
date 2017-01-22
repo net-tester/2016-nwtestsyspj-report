@@ -25,8 +25,9 @@
 OpenFlowスイッチを使用してテストトラフィックを''distribute''する)。本節
 では物理OpenFlowスイッチの選択と設定について解説する。
 
-% NetTesterが使用する物理OpenFlowスイッチには\tabref{tab:ofs-requirement}
-% の要件が求められる~\cite{l1pjpoc}。
+    \paragraph{物理OpenFlowスイッチの要件と選択}
+NetTesterが使用する物理OpenFlowスイッチには\tabref{tab:ofs-requirement}
+の要件が求められる~\cite{l1pjpoc}。
 
 \begin{table}[h]
  \centering
@@ -69,9 +70,10 @@ OpenFlowスイッチを使用してテストトラフィックを''distribute''�
 % TODO: 昨年度ドキュメントそのまま。現物確認すること
 % TODO: OVS version を追記すること。
 
-PicOSはOVS Mode (Open vSwitch)で使用する。PicOS OVSでは以下の設定をおこ
-なう。下記設定事項についてはPicOSマニュアルおよびOpen vSwitchドキュメン
-ト\footnote{ovs-vswitchd.conf.db.5.txt
+    \paragraph{物理OpenFlowスイッチの設定}
+PicOSはOVS Mode (Open vSwitch)で使用する。物理スイッチ(PicOS OVS)では以
+下の設定をおこなう。下記設定事項についてはPicOSマニュアルおよびOpen
+vSwitchドキュメント\footnote{ovs-vswitchd.conf.db.5.txt
 \url{http://openvswitch.org/support/dist-docs/ovs-vswitchd.conf.db.5.txt}}
 も参照すること。
 \begin{itemize}
@@ -103,10 +105,19 @@ PicOSはOVS Mode (Open vSwitch)で使用する。PicOS OVSでは以下の設定�
         \item (Optional) 物理OpenFlowスイッチとOFC(NetTester OFC)との接
               続がタイミングにより切断されるなどの現象がある場合には、
               Inactivity probe の値を調整する。
+        \item NetTesterでは、利用する物理OpenFlowスイッチのDPIDを指定で
+              きる(\ref{sec:nettester-envvar}参照)。PicOSでは
+              \lstref{lst:psw-openflow-config}のようにOFC(NetTester
+              Controller)情報およびDPIDの設定をおこなう\footnote{PoCでは
+              物理OpenFlowスイッチのDPIDを\code{0x1}としている。}。
        \end{itemize}
 \end{itemize}
 
-  
+\begin{lstlisting}[language=sh,caption=物理スイッチのOpenFlow設定,label=lst:psw-openflow-config]
+ovs-vsctl set bridge br0 other-config:datapath-id=0000000000000001
+ovs-vsctl set-controller br0 tcp:[NetTester Server Mgmt IP]:6653
+\end{lstlisting}
+
   \subsection{NetTester Server の構成選択}
   \label{sec:nettester-server-deploy-pattern}
 
@@ -156,7 +167,7 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
 ネットワークについては bridge 接続でよい(他のVMやハイパーバイザとL2で接
 続する, \lstref{lst:kvmconf-mgmt-port})。
 
-\begin{table}[h]
+\begin{table}[hb]
  \centering
  \caption{サーバ情報}
  \label{tab:server-spec}
@@ -198,7 +209,8 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
 \end{lstlisting}
 
 
-  \subsection{NetTester Server のソフトウェアスタック}
+  \subsection{NetTester Server のソフトウェア構成}
+  \label{sec:nettester-server-software}
 
   % 必要なソフトウェア(package)とインストール
   % - 基本的なパッケージ
@@ -206,30 +218,303 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
   %   - ruby, rubyenv
   %   - Git
   %   - Build-Essentials
-  %   - テストシナリオでつかうもの (nc, dnsmasqなど)
   % - OSの設定
   %   - sudoers secure\_path
 
-  \subsection{テストシナリオ (net-tester/examples)}
-
-  \subsection{NetTester}
-
-\section{基本的な使い方}
-
-NetTester 単独での利用
+    \paragraph{NetTesterを使用するために必要なソフトウェア}
+\nettester を使用するための必須ソフトウェアとPoCで使用したバージョンにつ
+いて\tabref{tab:nettester-software-stack}に示す。使用するソフトウェアの
+導入にあたっての注意事項を以下に示す。
 \begin{itemize}
- \item NetTesterでad-hocなテスト作業を拡張する - Qiita \url{http://qiita.com/corestate55/items/d6a8cdc03de09a46877c}
-       これの基礎編のところをいれておけばよいとおもわれる
- \item 環境変数の設定
-       \begin{itemize}
-        \item ``DEVICE``
-              \begin{itemize}
-               \item 調査：セグメントローカルの試験がとおらない – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/259184454}
-               \item ネットワークデバイスと dpid を rake に渡せるようにする – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/214833956}
-              \end{itemize}
-        \item expectacle 関連
-       \end{itemize}
+ \item \tabref{tab:nettester-software-stack}以外に必要な一般的な開発ツー
+       ル等については Build Essential\footnote{\code{sudo apt install
+       build-essential} ,
+       \url{http://packages.ubuntu.com/ja/precise/build-essential}.}など
+       で導入しておくこと。
+ \item NetTesterで使用するRuby package(gem)はbundlerで自動的にインストー
+       ルされる。GemについてはNetTesterリポジトリ内 \code{Gemfile}等を参
+       照すること。
+ \item Rubyについては
+       rbenv\footnote{\url{https://github.com/rbenv/rbenv}} などで複数の
+       rubyバージョンを管理する環境でもよい。
+ \item NetTesterはバックエンドで\code{ip}コマンドを使用してNetwork
+       Namespaceの操作をおこなっている\footnote{正確にはNetTesterが利用
+       しているTrema/Phutが\code{ip}コマンドを使用している。
+       \ref{sec:phut_basics}参照。}。このときroot権限が必要になり
+       \code{sudo}を使用して実行する。\code{sudo}利用にあたって
+       \code{PATH}まわりのエラーが発生する場合は\code{sudo}設定ファイル
+       (\code{/etc/sudoers})の\code{secure\_path}設定を修正すること。
 \end{itemize}
+
+  \begin{table}[H]
+   \centering
+   \caption{NetTester Serverのソフトウェア構成}
+   \label{tab:nettester-software-stack}
+   \begin{tabularx}{\linewidth}{l|l|X}
+    \hline
+    Software & Version (PoC) & Notes \\
+    \hline
+    \hline
+    OS (Linux) & \shortstack[l]{Ubuntu 16.04 (GNU/Linux 4.4.0),\\ \tabref{tab:server-spec}参照} & Linux Network Namespace が使用できること。 \\
+    \cline{1-2}
+    iproute2 & 4.3.0 & \\
+    \hline
+    Git & 2.7.4 & \\
+    \hline
+    Open vSwitch & 2.5.0 & SSWとして使用する。\tabref{tab:ofs-requirement}満たすこと。 \\
+    \hline
+    Ruby & 2.3.1p112 & 2.0以上が必要。2.3以上を推奨。\\
+    \hline
+   \end{tabularx}
+  \end{table}
+
+  \paragraph{Open vSwitch(SSW)の設定}
+NetTesterサーバ上のソフトウェアスイッチは、NetTester起動時に都度
+NetTesterが設定をおこなうため、事前に設定等をおこなう必要はない。
+NetTesterを起動すると、\ref{sec:nettester-model-restriction}節に示した
+DPIDでOpen vSwitchのブリッジが作成され、OFCとの接続設定がおこなわれる。
+
+  \subsection{テストシナリオ (net-tester/examples) のインストール}
+  \label{sec:deploy-test-cenario}
+  % 必要なソフトウェア(package)とインストール
+  % - 基本的なパッケージ
+  %   - テストシナリオでつかうもの (nc, dnsmasqなど)
+
+  % テストシナリオで使うツール(package)の解決 – NetTester
+  % https://3.basecamp.com/3088280/buckets/867009/todos/327898933
+
+本プロジェクトでは、NetTester を使用したネットワークのテストシナリオを
+\nettesterex として整備している。
+
+テストシナリオをインストールする場合は\lstref{lst:install-scenario}の手
+順を実行する。テストシナリオの中でNetTesterはテスト用ノード操作をおこな
+う際に使用するツールのひとつとなるため、bundlerにより自動的にインストー
+ルがおこなわれる。NetTester以外にテストシナリオ(Cucumberで記述)内で使用
+するruby gemsについても、リポジトリ内\code{Gemfile}等で管理される。
+
+\begin{lstlisting}[language=sh,caption=テストシナリオのインストール,label=lst:install-scenario]
+git clone https://github.com/net-tester/examples.git
+cd examples
+bundle install --binstubs --path=vendor/bundle
+\end{lstlisting}
+
+このほかに、テストシナリオでは、NetTesterを使って生成・配置したテスト用
+ノードの上で、さらにテストトラフィックを生成し end-to-end の通信状況を見
+ていくためのツールが必要になる。PoCテストシナリオでは
+\tabref{tab:tools-for-scenario}に示すツールを使用している。現時点
+\footnote{2017年1月時点}で、テストシナリオ内で使用する(bundlerで管理でき
+るruby packageではない)ツールについては統一して管理することはできておら
+ず、別途手動で必要なツールをインストールする必要がある。
+
+\begin{table}[h]
+ \centering
+ \caption{PoCテストシナリオ内で使用するツール}
+ \label{tab:tools-for-scenario}
+ \begin{tabular}{l|l|l}
+  \hline
+  Tool(package) & Version(PoC) & テストシナリオ内での使いかた \\
+  \hline
+  \hline
+  netcat(\code{nc}) & 1.105 & 汎用/簡易TCPサーバとして使用 \\
+  dnsmasq & 2.75 & DNS通信テスト用の軽量DNSサーバとして使用 \\
+  \hline
+ \end{tabular}
+\end{table}
+
+  \subsection{NetTesterのインストール}
+
+テストシナリオを中心にネットワークのテストを開発する場合は
+\ref{sec:deploy-test-cenario}節のとおり、テスト・プロジェクト(リポジトリ)が
+使用するツールのひとつとしてNetTesterが含まれる。
+
+NetTesterを直接(単体で)使用して簡単なテスト操作を行なうこともできる。そ
+うした場合には\lstref{lst:install-nettester}の手順でNetTester単体でのイ
+ンストールをおこなう。
+
+\begin{lstlisting}[language=sh,caption=NetTesterのインストール,label=lst:install-nettester]
+git clone https://github.com/net-tester/net-tester.git
+cd net-tester
+bundle install --binstubs --path=vendor/bundle
+\end{lstlisting}
+
+ \section{基本的な使い方}
+ \label{sec:basic-usage}
+
+  \subsection{NetTesterが使用する環境変数}
+  \label{sec:nettester-envvar}
+  % 環境変数の設定
+  % - ``DEVICE``
+  %   - 調査：セグメントローカルの試験がとおらない – NetTester
+  %     \url{https://3.basecamp.com/3088280/buckets/867009/todos/259184454}
+  %   - ネットワークデバイスと dpid を rake に渡せるようにする – NetTester
+  %     \url{https://3.basecamp.com/3088280/buckets/867009/todos/214833956}
+  % - expectacle 関連についてはappendixにうつすか。
+
+NetTesterは以下の2つの環境変数を使用する。
+\begin{description}
+ \item[\code{DEVICE}] NetTesterサーバ上で、SSW-PSW間を接続するために使用
+            するNICを指定する。
+ \item[\code{DPID}] 物理OpenFlowスイッチ(PSW)のDatapath IDを指定する。
+\end{description}
+
+\figref{fig:nettester-deploy-vm}の場合は\code{DEVICE=ens5}、
+\code{DPID=0x1}となる。テストシナリオ(NetTester Examples)では\code{rake}
+により複数のテストシナリオの一括実行(回帰テスト)を実行できる。
+\code{rake}実行時には次のように環境変数を指定して回帰テストを実行する。
+\begin{lstlisting}[title=回帰テスト実行時の環境変数指定]
+rake DEVICE=ens5 DPID=0x1 cucumber
+\end{lstlisting}
+
+この他にも、実際のテストシナリオ実行の際に、テスト対象ネットワーク機器操
+作のために使うツール(Expectacle, \ref{sec:expectacle}参照)でも環境変数を
+使用するので注意すること。
+
+  \subsection{NetTester APIの基礎}
+  \label{sec:nettester-api-basics}
+  % NetTesterでad-hocなテスト作業を拡張する - Qiita
+  % \url{http://qiita.com/corestate55/items/d6a8cdc03de09a46877c}
+
+NetTesterを使った処理の基本的な流れと、APIの基本的な使用方法を例をもとに
+解説する。
+
+\paragraph{サンプル環境構成}
+
+いま\figref{fig:nettester-basic-example}のように、テスト対象ネットワーク
+にあるふたつのL2スイッチ(L2SW)に、それぞれ1台ずつテスト用ノードを接続し
+てテスト作業をおこなうことを想定する。このとき、テスト用ノードの生成およ
+び配置・接続はNetTesterを使用しておこなう。また、テスト用ノードで実施す
+るテスト作業はPry\footnote{pry/pry: An IRB alternative and runtime
+developer console, \url{https://github.com/pry/pry}}を使用してad-hocに
+(手動で)実施する。
+
+これをNetTester APIを用いて実装すると
+\lstref{lst:nettester_basic_example}のようになる\footnote{このスクリプト
+は解説用にパラメタ設定などを冗長に記載している。実際にテストシナリオ等を
+実装する場合は、より無駄のない形で記述することができる。}。
+% TODO: FactoryGirlの話とかへの参照をいれたい
+
+\begin{figure}[h]
+ \centering
+ \includegraphics[scale=0.75]{img/nettester-basic-example.png}
+ \caption{NetTester利用例(構成図)}
+ \label{fig:nettester-basic-example}
+\end{figure}
+
+\begin{lstlisting}[caption=NetTester基礎,label=lst:nettester_basic_example]
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'net_tester'
+require 'pry'
+
+# parameter definition
+nwdev = 'ens5'
+pss_dpid = 0x1
+mac_base = '00:ba:dc:ab:1e:'
+
+p '# run net_tester'
+NetTester.run(network_device: nwdev,
+              physical_switch_dpid: pss_dpid)
+p '# wait ssw/psw connection'
+sleep 10
+
+p '# Create host11 in internal segment (ip:10.10.10.7, vlan:2025)'
+host11 = NetTester::Netns.new(name: 'host11',
+                              mac_address: mac_base + '01',
+                              ip_address: '10.10.10.7',
+                              netmask: 24,
+                              gateway: '10.10.10.254',
+                              virtual_port_number: 2,
+                              physical_port_number: 6,
+                              vlan_id: 2025)
+
+p '# Create host21 in internal segment (ip:10.10.10.9, vlan:2025)'
+host21 = NetTester::Netns.new(name: 'host21',
+                              mac_address: mac_base + '02',
+                              ip_address: '10.10.10.9',
+                              netmask: 24,
+                              gateway: '10.10.10.254',
+                              virtual_port_number: 3,
+                              physical_port_number: 10,
+                              vlan_id: 2025)
+
+# into pry console
+binding.pry
+
+# cleanup
+NetTester.kill
+\end{lstlisting}
+
+    \paragraph{NetTesterによるテスト操作の流れ}
+NetTesterを使ったネットワークのテスト操作は次のステップで実装される。
+\begin{enumerate}
+ \item NetTesterを起動する
+       \begin{itemize}
+        \item \verb|NetTester.run| (引数については\ref{sec:nettester-envvar}参照)
+        \item 起動すると、SSWの設定とOFCの起動をおこなう。
+              \lstref{lst:nettester_basic_example}ではOFC起動後にSSW/PSW
+              の接続を待つために\code{sleep}を設定している。
+       \end{itemize}
+ \item NetTesterでテスト用ノードを生成する
+       \begin{itemize}
+        \item \verb|NetTester::Netns.new| によって Network Namespace を
+              使ったテスト用ノードを生成する。(詳細については
+              \ref{sec:phut_basics}参照)
+        \item 生成と同時にテスト対象ネットワークへの配置(パッチ接続)をお
+              こなう。引数\verb|virtual_port_number|および
+              \verb|physical_port_number|は「パッチ」の両端点となるポー
+              ト番号をあらわしている。ここで指定された端点情報をもとに、
+              NetTesterはOpenFlowスイッチ(PSW, SSW)にフロールールを設定
+              する。
+        \item \figref{fig:nettester-basic-example}で、L2SW側のテスト用ノー
+              ド接続ポートはTrunk Port (vlan tagged port)になっている。
+              そのため、\code{vlan}オプションを指定して、テスト用ノード
+              が生成するトラフィックにVLAN Tagを追加することを指定してい
+              る。
+       \end{itemize}
+ \item 生成したテスト用ノード上で作業をおこなう
+       \begin{itemize}
+        \item \verb|NetTester::Netns#exec| (後述)
+       \end{itemize}
+ \item NetTesterを終了する
+       \begin{itemize}
+        \item \verb|NetTester.kill|
+        \item NetTesterが生成したSSW, テスト用ノードなどを削除する。テス
+              ト用ノード(verb|NetTester::Netns|)の実態は network
+              namespace であるため、OS上に設定が残る。適切な終了(削除)処
+              理がおこなわれない場合、OS上にこれらの設定が残りつづけてし
+              まうため注意が必要である。
+       \end{itemize}
+\end{enumerate}
+
+テスト用ノード上での操作については、このスクリプトではpryによるインタラ
+クティブシェル上での操作となる。生成したテスト用ノード上(テスト用ノード
+のnamespace上)でコマンドを実行することでテスト作業をおこなう。テスト用ノー
+ド上でのコマンド実行には\verb|NetTester::Netns#exec|を使用する。たとえば
+次のような操作を実施することができる。
+\begin{lstlisting}[language=sh,title=テスト作業例]
+[31] pry(main)> puts host11.exec("ping -c3 #{host21.ip_address}")
+PING 10.10.10.9 (10.10.10.9) 56(84) bytes of data.
+64 bytes from 10.10.10.9: icmp_seq=1 ttl=64 time=0.514 ms
+64 bytes from 10.10.10.9: icmp_seq=2 ttl=64 time=0.336 ms
+64 bytes from 10.10.10.9: icmp_seq=3 ttl=64 time=0.311 ms
+
+
+--- 10.10.10.9 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 1998ms
+rtt min/avg/max/mdev = 0.311/0.387/0.514/0.090 ms
+=> nil
+[32] pry(main)>
+\end{lstlisting}
+
+    \paragraph{Pry応用}
+\lstref{lst:nettester_basic_example}を拡張してテスト用ノードを多数配置し、
+PryとNetTesterを併用してインタラクティブにテスト作業をおこなうといった応
+用もできる。このような応用については本書では扱わない。別途資
+料~\cite{nettester-pry}を参照すること。
+
+% TODO: ここで含めるか?
+% - コマンド実行/並列コマンド実行?
 
 %%% Local Variables:
 %%% mode: yatex
