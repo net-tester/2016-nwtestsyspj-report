@@ -1,0 +1,31 @@
+No.,ポリシ,アプリケーション,Source IP,,Destination IP,,Destination Port
+1,PC→開発環境,AP1アクセス,PC,10.10.10.0/24,資産管理サーバ,10.10.10.1,tcp/11000
+2,PC→開発環境,AP2アクセス,PC,10.10.10.0/24,テスト環境サーバ,10.10.10.2,tcp/23
+3,PC→開発環境,AP3アクセス,PC,10.10.10.0/24,テスト環境サーバ,10.10.10.2,tcp/13000
+4,PC→開発環境,サーバ管理: ssh,PC,10.10.10.0/24,資産管理サーバ,10.10.10.1,"tcp/22,80,443"
+5,PC→開発環境,サーバ管理: ssh,PC,10.10.10.0/24,テスト環境サーバ,10.10.10.2,"tcp/22,80,443"
+6,PC→DNSサーバ,DNS Query,PC,10.10.10.0/24,DNSサーバ,10.10.0.10,"tcp,udp/53"
+7,PC→Internet,Web browsing,PC,10.10.10.0/24,Internet,ANY,"tcp 80,443"
+8,PC→Internet,NTP Query,PC,10.10.10.0/24,Internet,ANY,udp/123
+9,PC→DNSサーバ,応答確認: ping/traceroute,PC,10.10.10.0/24,DMZ,10.10.0/24,icmp
+10,PC→Internet,応答確認: ping/traceroute,PC,10.10.10.0/24,Internet,ANY,icmp
+11,PC→DNSサーバ,サーバ管理: ssh,PC,10.10.10.0/24,DNSサーバ,10.10.0.10,tcp/22
+12,PC→SSLVPNサーバ,"サーバ管理: ssh, webui",PC,10.10.10.0/24,SSLVPNサーバ,10.10.0.11,"tcp/22,80,443"
+13,DMZ→Internet,package update (web),DMZ内サーバ,10.10.0.0/25,Internet,ANY,"tcp/80,443"
+14,DNSサーバ→DNS Query,上位DNSへのクエリ,DNSサーバ,10.10.0.10,Internet,ANY,"tcp,udp/53"
+15,DMZ→DNSサーバ,DNS Query,DMZ内サーバ,10.10.0.0/25,DNSサーバ,10.10.0.10,"tcp,udp/53"
+16,DMZ→NTP,NTP Query,DMZ内サーバ,10.10.0.0/25,Internet,ANY,udp/123
+17,PC→DNSサーバ,A社内部,PC,10.10.10.0/24,DNSサーバ,10.10.0.10,"tcp,udp/53"
+18,PC→DMZ,サーバ管理: ssh,PC,10.10.10.0/24,DMZ内サーバ,10.10.0.0/25,"tcp/22,80,443"
+19,VPNPOOL→開発環境,AP1アクセス,DMZ VPN Pool,10.10.0.128/25,資産管理サーバ,10.10.10.1,tcp/11000
+20,VPNPOOL→開発環境,AP2アクセス,DMZ VPN Pool,10.10.0.128/25,テスト環境サーバ,10.10.10.2,tcp/23
+21,VPNPOOL→開発環境,AP3アクセス,DMZ VPN Pool,10.10.0.128/25,テスト環境サーバ,10.10.10.2,tcp/13000
+22,DMZ→Internet,応答確認: ping/traceroute,DMZ内サーバ,10.10.0.0/25,Internet,ANY,icmp
+23,DMZ→A社内部,応答確認: ping/traceroute,A社内部,10.10.10.0/24,DMZ内サーバ,10.10.0.0/25,icmp
+24,A社内部→DMZ,応答確認: ping/traceroute,DMZ内サーバ,10.10.0.0/25,A社内部,10.10.10.0/24,icmp
+25,Internet→DMZ(NAT公開されているもの),応答確認: ping/traceroute,Internet,ANY,SSLVPNサーバ,203.0.113.5,icmp
+26,Internet→外部,応答確認: ping/traceroute,Internet,ANY,Router,203.0.113.1,icmp
+27,Internet→外部,応答確認: ping/traceroute,Internet,ANY,Firewall,203.0.113.2,icmp
+28,外部→Internet,応答確認: ping/traceroute,A社外部,203.0.113.0/29,Internet,ANY,icmp
+29,PC→A社VPN,SSLVPN,B社(Global),198.51.100.94,SSLVPNサーバ,203.0.113.5,"tcp/80,443"
+30,PC→A社VPN,応答確認: ping/traceroute,B社(Global),198.51.100.94,SSLVPNサーバ,203.0.113.5,icmp
