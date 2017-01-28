@@ -1,7 +1,7 @@
 %% -*- coding: utf-8-unix -*-
 
-\chapter{PoC}
-\label{chap:poc}
+\chapter{PoCターゲット設計}
+\label{chap:poc-target-design}
 
  \section{PoCの概要}
  \label{sec:poc-overview}
@@ -17,13 +17,13 @@
  \subsection{PoCの目的}
  \label{sec:poc-purpose}
 
-2015年度、\lopjc では network namespace によるテスト用ノード生成と
-OpenFlowスイッチによる配置(パッチ)という、\tabref{tab:test-functions}の
-No.3-4に相当する技術の基礎検証を実施した。本プロジェクトでは、それらの基
-礎技術をもとにNetTesterを実装し、実際のテスト(ユースケース)としてどういっ
-たテストが自動化可能か(\tabref{tab:test-functions}, No.5)を中心に実証し
-ていく。テストのユースケースとして、静的なふるまい・動的なふるまいのふた
-つの観点でテストシナリオの実装を進める(\ref{sec:behavior-test}参照)。
+\lopjc では network namespace によるテスト用ノード生成とOpenFlowスイッチ
+による配置(パッチ)という、\tabref{tab:test-functions}のNo.3-4に相当する
+技術の基礎検証を実施した。本プロジェクトでは、それらの基礎技術をもとに
+NetTesterを実装し、実際のテスト(ユースケース)としてどういったテストが自
+動化可能か(\tabref{tab:test-functions}, No.5)を中心に実証していく。テス
+トのユースケースとして、静的なふるまい・動的なふるまいのふたつの観点でテ
+ストシナリオの実装を進める(\ref{sec:behavior-test}参照)。
 
   \subsection{PoCターゲットユースケース検討}
   \label{sec:poc-usecase-discuss}
@@ -151,24 +151,25 @@ PoCにあたって\figref{fig:poc-situation}のように登場人物を設定し
 
 \begin{figure}[h]
  \centering
- \includegraphics[scale=0.6]{img/poc-situation.png}
+ \includegraphics[scale=0.5]{img/poc-situation.png}
  \caption{PoC設定: 登場人物の位置付け}
  \label{fig:poc-situation}
 \end{figure}
 
 以降、ネットワークのテストシナリオについては、\tj 社員がテストをする視点
-をとる。(\tj 社員がネットワークの設計・構築をおこない、\yo 社へおさめる
-前に、\yo が業務をおこなう上で実現したいこと、\yo の要求すべてが問題なく
-実現できているかどうかをテストする。)
+をとる。(\tj 社員がネットワークの設計・構築をおこない、\yo へおさめる前
+に、\yo が業務をおこなう上で実現したいこと、\yo の要求すべてが問題なく実
+現できているかどうかをテストする。)
 
-  \subsection{要件定義}
+  \subsection{サービス要件定義}
 
 以下、PoC上の状況設定をおこなう。なお、PoCを複雑化させないため、原則
-L1-L4までの要件定義とし、上位レイヤの要求(業務上の要求、例えばアクセスロ
-グ取得等セキュリティ観点の要求)は設定していない。
+L1-L4までの機能的な要件設定とし、(可用性を除く)非機能要件や主要な要件に
+付随する業務上の要求(アクセスログ取得等セキュリティ観点の要求など)は設定
+していない。
 
-    \paragraph{基本的な要件の設定}
-\yo および \tj が共同開発をおこなうための要件は次のようになる
+    \paragraph{機能要件}
+\yo および \tj が共同開発をおこなうための機能要件は次のようになる
 \footnote{平成25年度 ネットワークスペシャリスト試験の問題をもとに、架空
 の中小企業ネットワークとして設定している。
 \url{https://www.jitec.ipa.go.jp/1_04hanni_sukiru/mondai_kaitou_2013h25_2/2013h25a_nw_pm1_qs.pdf}}
@@ -191,12 +192,12 @@ L1-L4までの要件定義とし、上位レイヤの要求(業務上の要求�
        ネット側に提供するサービスを除く。)
 \end{itemize}
 
-    \paragraph{サービスレベル要求}
+    \paragraph{可用性}
 
-ネットワークのサービスレベルについては次のように設定する。
+ネットワークの可用性については次のように設定する。
 \begin{itemize}
  \item インターネット回線の冗長化はおこなわない\footnote{PoC設定上の都合。
-       障害試験ポイントとしてNW機器(FW)ののみ注目する。}。
+       障害試験ポイントとしてNW機器(FW)にのみ注目する。}。
  \item 社内では中核をなすNW機器の冗長化をおこなう。(機器メンテナンス作業
        や障害発生時の \tj 開発業務継続のため。)
 \end{itemize}
@@ -213,6 +214,7 @@ L1-L4までの要件定義とし、上位レイヤの要求(業務上の要求�
  %        - DNSについてはL7(DPI)でフィルタする
 
   \subsection{論理ネットワーク設計}
+  \label{sec:logical-nw-design}
 
   \paragraph{利用者要件}
 \tj は \yo とのネットワーク要件検討をもとに、
@@ -236,7 +238,7 @@ L1-L4までの要件定義とし、上位レイヤの要求(業務上の要求�
         \item SSL VPNサーバ: \tj との共同開発業務のために、インターネッ
               ト経由で \tj 社からのリモートアクセスを受け付ける。\tj 社
               VPNクライアントはVPN接続後、VPNサーバから割り当てられたDMZ
-              ゾーン内IPを使用して内部ゾーンの開発環境にアクセスする。
+              内IPを使用して内部ゾーンの開発環境にアクセスする。
         \item DNSサーバ: \yo 内部向けに提供する名前解決・サービス
        \end{itemize}
  \item 内部(internal)ゾーン: 社内のみ利用可能な開発系サーバおよび社員(開
@@ -315,7 +317,7 @@ L1-L4までの要件定義とし、上位レイヤの要求(業務上の要求�
   \subsection{通信要件}
 
 利用者要件および管理者要件をふまえて、ネットワークで提供する通信要件は
-\tabref{tab:poc-requires-yo-int}, \tabref{tab:poc-requires-yo-dmz},
+\tabref{tab:poc-requires-yo-int}・\tabref{tab:poc-requires-yo-dmz}・
 \tabref{tab:poc-requires-etc} のようになる。
 
 \begin{landscape}
@@ -419,12 +421,80 @@ No. & ポリシ & アプリケーション & \multicolumn{2}{|l|}{Source IP} & \
 
   \subsection{物理ネットワーク設計}
 
+    \paragraph{物理設計の基本的な考えかた}
+\ref{sec:logical-nw-design}をもとに、物理ネットワーク設計を
+\figref{fig:poc-env-physical}のようにした。使用した機器の詳細については
+\tabref{tbl:device-list}参照。
+\begin{itemize}
+ \item セキュリティゾーンおよびゾーン間通信ポリシはFirewallによっておこ
+       なう。
+       \begin{itemize}
+        \item 外部: WAN/Untrust Zone
+        \item DMZ: DMZ Zone
+        \item 内部: LAN/Trust Zone
+       \end{itemize}
+ \item 外部ゾーンはFW上流側L3SWで収容する。L3SWはinternet境界(キャリア回
+       線終端)である。
+ \item 内部ゾーンおよびDMZはL2SW1/L2SW2で収容する。物理リンクは共有し、
+       VLANによって論理的に分離する。
+\end{itemize}
+
+ネットワーク機器(FW, L2/L3スイッチ)への管理アクセスについては、L1-L3で分
+離する(\figref{fig:poc-env-physical-detail}参照)。
+\begin{itemize}
+ \item Firewall: 管理用VRを設定し、管理用VRへ接続するインタフェースおよ
+       びVLANをサービス用のものと分離する。
+ \item L2/L3スイッチ: 管理用VRFを設定し、管理用VRFへ接続するインタフェー
+       スおよびVLANをサービス用のものと分離する。
+\end{itemize}
+
+    \paragraph{冗長性}
+
+社内ネットワーク冗長化の要求からFirewallを冗長化する。
+\begin{itemize}
+ \item FirewallはActive/Passive方式とする。障害が発生していない場合はFW1
+       が通常Activeとなり、トラフィックの転送をおこなうものとする。
+ \item Active側FW(FW1)のもつすべてのリンクについて、いずれかひとつでもリ
+       ンクダウンが発生した場合に自動的に処理をPassive側(FW2)へ切り替え
+       る。
+ \item 切替のトリガとなったリンクダウンが復旧し、FW1のすべてのリンクが正
+       常になった場合は、トラフィック処理をFW1へ切り戻す。
+ \item ステートフルフェイルオーバー: FW1/FW2は常に処理しているセッション
+       の情報を同期し、切替・切り戻しが発生した際でも処理中のトラフィッ
+       ク(セッション)を維持する。
+\end{itemize}
+
+    % \paragraph{パケットフィルタ}
+    % DNSのテスト作る – NetTester
+    % https://3.basecamp.com/3088280/buckets/867009/todos/301325453
+    % SSGでDNS DPIするみたいな記述はみあたらない。
+    % どう書くか...
+
+% Firewall では基本的にL3/L4のパケットフィルタをおこなう(ステートフルイン
+% スペクション可能)。
+
 \begin{figure}[h]
  \centering
  \includegraphics[scale=0.55]{img/poc-env-physical.png}
  \caption{PoC環境: 物理構成図(概要)}
  \label{fig:poc-env-physical}
 \end{figure}
+
+\begin{table}[h]
+ \centering
+ \caption{機器一覧}
+ \label{tbl:device-list}
+ \begin{tabular}[t]{l|l|l|l}
+  \hline
+  Host & Vendor & Device & Version \\
+  \hline
+  \hline
+  FW1/2 & Juniper & SSG20 & ScreenOS 6.3.0r22.0 \\ \hline
+  L3SW, L2SW1/2 & Cisco & Catalyst3750G-24TS & IOS 12.2(50)SE5 (ipservicesk9) \\ \hline
+ \end{tabular}
+\end{table}
+
+% SSG, 当初使用していたのは 6.3.0r5.0
 
 \section{環境構成(NetTester)}
 
@@ -444,73 +514,6 @@ No. & ポリシ & アプリケーション & \multicolumn{2}{|l|}{Source IP} & \
  \end{figure}
 \end{landscape}
 
-\section{静的なテスト}
-
-
-\begin{itemize}
- \item 実装
-       \begin{itemize}
-        \item Step2テスト業務で気づいたことをまとめる – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/260220903}
-       \end{itemize}
- \item 結果: 実際に発見できたトラブルや設定ミスなどをあげる。
-
-       \begin{itemize}
-        \item Teardown関連
-              \begin{itemize}
-               \item 原因切り分けメモ (muraki) – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/documents/217782147}
-               \item 調査: テスト環境でシナリオ実行すると2回目以降でコケる – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/218486066}
-              \end{itemize}
-        \item Target Network の設定不備の発見
-              \begin{itemize}
-               \item DNSのテスト作る – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/301325453}
-               \item 通信要件\#10 A社内PC→インターネットの疎通確認(ICMP) – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/233175867}
-               \item 通信要件\#29 B社PC→DMZ内のVPNサーバの疎通確認(SSLVPN) – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/233178490}
-              \end{itemize}
-       \end{itemize}
-\end{itemize}
-
-\section{動的なテスト}
-
-障害試験シナリオを書く – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/238169066}
-
-\begin{figure}[h]
- \centering
- \includegraphics[scale=0.6]{img/poc-env-linkdown.png}
- \caption{PoC環境: NetTesterによるリンクダウン操作}
- \label{fig:poc-env-linkdown}
-\end{figure}
-
-\begin{itemize}
- \item 実装 (NAT IPの変更とかデモの話をどこまで含めるか?)
- \item 結果
-\end{itemize}
-
-\section{シナリオテスト実装における検討ポイント}
-
-\subsection{Teardown処理}
-
-\begin{itemize}
- \item Target network の状態
-       \begin{itemize}
-        \item ARP Table のクリア
-        \item NAT Table のクリア
-        \item Firewall の active/standby (自動復旧にしているのでとくにいれていない)
-       \end{itemize}
- \item Netns の /etc 配下のクリア
-       \begin{itemize}
-        \item 自作echoサーバーで通信開始時に10秒のラグが起きる問題 – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/274457003}
-       \end{itemize}
- \item 物理OFSのflow tableのクリア (まだやれてない)
-\end{itemize}
-
-\subsection{テストシナリオのサイズ}
-
-シナリオサイズの目安、シナリオ分割の目安 (step3 test つくっているときに
-分割するって話になった理由は?)
-
-\section{PoC結果}
-
-結果まとめ
 
 %%% Local Variables:
 %%% mode: yatex
