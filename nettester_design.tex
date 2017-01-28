@@ -732,12 +732,13 @@ VLAN Tagがある場合・ない場合でブロードキャストのルールを
 
 OpenFlow/1.0では、テーブルミス\footnote{フローテーブル内のどのフロールー
 ルにもマッチしない場合。}のとき、デフォルトでコントローラに送信
-(packet-in)される。この動作はこのあとの OpenFlow バージョンでは変更され
-ているため明示的にルールを指定する。別途記載するが、Trema にのパケットパー
-サ(Trema/Pio)で特定のパケットがパースできず、コントローラが停止するバグ
-があったため、NetTesterでは default DROP を採用している\footnote{default
-CONTROLLER はデバッグ用途で使用することができる。}。
-% TODO: 「後述」のところうめる。
+\footnote{\code{actions=CONTROLLER} = OFCへのPacket-in送信}される。この
+動作はこのあとの OpenFlow バージョンでは変更されているので、NetTester
+OFCでは動作を統一させるために明示的に指定する。当初、デバッグ用途もあり
+\code{actions=CONTROLLER}としていたが、Trema のパケットパーサ(Trema/Pio)
+で特定のパケットがパースできず、コントローラが停止するバグがあった
+\footnote{修正済: \url{https://github.com/trema/pio/pull/320}}ため、
+NetTesterでは default DROP を採用している。
 
   \section{リンク操作方式}
   \label{sec:link-operation}

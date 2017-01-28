@@ -28,11 +28,10 @@ No.3-4に相当する技術の基礎検証を実施した。本プロジェク�
   \subsection{PoCターゲットユースケース検討}
   \label{sec:poc-usecase-discuss}
 
-実際的なネットワークテストのユースケースとして以下の案をあげた。今回はター
-ゲットユースケース案として\tabref{tab:test-usecases}のような事例について
-検討した。
+実際的なネットワークテストのユースケースとしてとして
+\tabref{tab:test-usecases}のような事例について検討した。
 
-\tabref{tab:test-usecases}の事例について、汎用性があり、かつ「テストの自
+\tabref{tab:test-usecases}の事例をもとに、汎用性があり、かつ「テストの自
 動化」という観点で技術的に基礎となる機能を盛り込めるユースケースをターゲッ
 トユースケースとした。結果として、以下の2つのユースケースを選択した。い
 ずれもテスト自動化の有効性を出しやすい、頻繁にくりかえし行なう作業・複雑
@@ -93,29 +92,62 @@ No.3-4に相当する技術の基礎検証を実施した。本プロジェク�
 
   \subsection{PoC方針}
 
+  % TODO みなおし -> https://drive.google.com/open?id=0B2eRR_JxYJA5Vm1Dd0dJRGdjWU0
 ここまでで既にいくつか方針をあげているが、あらためてPoCの実施方針をまとめる。
 \begin{itemize}
  \item 本PoCで実施すること
        \begin{itemize}
-        \item テストシステムの機能・特定の自動化実装の話ではなく、「テストとして実行可能なユースケース」に注目する。
+        \item テストシステムの機能・特定の自動化実装ではなく、「テストと
+              して実行可能なユースケース」に注目する。
+        \item ネットワークテストの基本的な考えかたとして「静的なふるまい
+              のテスト」「動的なふるまいのテスト」の観点で実際のテストシ
+              ナリオを実装する。
+        \item 「ネットワークのふるまい」として、end-to-endの通信の実現可
+              否に着目する。ネットワークの設計・内部構造・使用している機
+              材に関わらず、ネットワークとしてどういった通信が実現される
+              べきか、という要求とそのテストに注目する。これは、ネットワー
+              クの利用者から見たネットワークに対する期待(要求)、あるいは
+              ネットワーク(サービス)提供者の視点から見たネットワークに対
+              する期待\footnote{サービス提供者として、ネットワーク利用者
+              にどういったサービスが提供できなければいけないか。}を確認
+              することである。
        \end{itemize}
  \item 本PoCで実施しないこと
        \begin{itemize}
-        \item 「できないこと」のテスト
-        \item 非機能要件のテスト(性能・拡張性・冗長性)
+        \item 「できないこと」のテスト: 利用者あるいはサービス提供者の視
+              点では、ネットワーク上「できてはいけないこと」の要求がある。
+              例えば、隣接する他者顧客環境と通信ができてはいけない、など。
+              本PoCはまず利用者に対して最低限提供すべきサービス(「できな
+              ければいけないこと」)についてのテストに焦点をあてる。
+        \item 非機能要件のテスト(性能・拡張性・冗長性): 上記のとおり、本
+              PoCではネットワークテスト(ユースケース)の実現可否、機能的
+              な実現性に注目する。そのため、性能や拡張性などについては考
+              慮せず、ユースケースを実現可能な最低限のシステム構成・実装
+              をとることを方針としている。
        \end{itemize}
 \end{itemize}
 
-\section{PoCターゲットユースケースの設定}
-\subsection{登場人物の役割}
- \begin{itemize}
-  \item ヨーヨーダイン社/タジマックス通信工業社の設定
-        \begin{itemize}
-         \item 図(\figref{fig:poc-situation})
-         \item サービスと通信要件(表)
-         \item 要件、サービス(レベル)、やりたいこと
-        \end{itemize}
- \end{itemize}
+ \section{PoCターゲットの設定}
+
+  \subsection{登場人物}
+
+PoCにあたって\figref{fig:poc-situation}のように登場人物を設定した。
+\begin{itemize}
+ \item ヨーヨーダイン社\footnote{架空の企業名}
+       \begin{itemize}
+        \item タジマックス通信工業社と共同でソフトウェア開発をおこなって
+              いる。
+        \item 社内ネットワークの新規構築をおこなうにあたり、ネットワーク
+              の設計・構築についてもタジマックス通信工業社に発注すること
+              になった。
+       \end{itemize}
+ \item タジマックス通信工業社\footnote{架空の企業名}(以降 \tj )
+       \begin{itemize}
+        \item ソフトウェア開発および情報システム基盤の設計・構築などをお
+              こなっている。
+        \item ヨーヨーダイン社の社内ネットワーク設計構築を受注している。
+       \end{itemize}
+\end{itemize}
 
 \begin{figure}[h]
  \centering
@@ -124,36 +156,167 @@ No.3-4に相当する技術の基礎検証を実施した。本プロジェク�
  \label{fig:poc-situation}
 \end{figure}
 
-\subsection{ネットワークに求められる要件}
+以降、ネットワークのテストシナリオについては、\tj 社員がテストをする視点
+をとる。(\tj 社員がネットワークの設計・構築をおこない、\yo 社へおさめる
+前に、\yo が業務をおこなう上で実現したいこと、\yo の要求すべてが問題なく
+実現できているかどうかをテストする。)
+
+  \subsection{要件定義}
+
+以下、PoC上の状況設定をおこなう。なお、PoCを複雑化させないため、原則
+L1-L4までの要件定義とし、上位レイヤの要求(業務上の要求、例えばアクセスロ
+グ取得等セキュリティ観点の要求)は設定していない。
+
+    \paragraph{基本的な要件の設定}
+\yo および \tj が共同開発をおこなうための要件は次のようになる
+\footnote{平成25年度 ネットワークスペシャリスト試験の問題をもとに、架空
+の中小企業ネットワークとして設定している。
+\url{https://www.jitec.ipa.go.jp/1_04hanni_sukiru/mondai_kaitou_2013h25_2/2013h25a_nw_pm1_qs.pdf}}
+。
+\begin{itemize}
+ \item \yo は社内に開発環境を持つ。開発環境は社内からのみアクセス可能と
+       する。
+ \item \tj はインターネット経由で \yo 社内にアクセスし、開発環境を共用し
+       て \yo との開発業務をおこなう。
+       \begin{itemize}
+        \item \tj からのアクセスはセキュアな通信方法をとること(通信を暗
+              号化すること)
+        \item \tj からのアクセスについて個人単位での認証・アクセスコント
+              ロールができること。
+       \end{itemize}
+ \item \yo が社内外に提供するサービスは、インターネット環境に直接は設置
+       せず、上流ネットワークで \yo によるL4(以上)のアクセス制御を行なう
+       こと。
+ \item インターネット側から \yo 社内への通信を許可しない。(\yo がインター
+       ネット側に提供するサービスを除く。)
+\end{itemize}
+
+    \paragraph{サービスレベル要求}
+
+ネットワークのサービスレベルについては次のように設定する。
+\begin{itemize}
+ \item インターネット回線の冗長化はおこなわない\footnote{PoC設定上の都合。
+       障害試験ポイントとしてNW機器(FW)ののみ注目する。}。
+ \item 社内では中核をなすNW機器の冗長化をおこなう。(機器メンテナンス作業
+       や障害発生時の \tj 開発業務継続のため。)
+\end{itemize}
 
  \section{環境構成(Target Network)}
+ % - L2/L3, Management network (VR/VRFとout-of-band設定)
+ % - FWの冗長化設定:
+ %        - active/passive, passiveはパケット転送しない
+ %        - tcp session state を同期する
+ %        - 状態監視するインタフェースの設定、自動復旧設定とする
+ % - FWのフィルタ設定:
+ %        - 原則L3/L4でのフィルタ
+ %        - tcp state をみる
+ %        - DNSについてはL7(DPI)でフィルタする
 
   \subsection{論理ネットワーク設計}
 
+  \paragraph{利用者要件}
+\tj は \yo とのネットワーク要件検討をもとに、
+\figref{fig:poc-env-logical}・\tabref{tab:ip-list}のようなネットワークを
+構築することとした。
+
 \begin{itemize}
- \item L2/L3, Management network (VR/VRFとout-of-band設定)
- \item FWの冗長化設定:
+ \item \yo ネットワークは、外部(社外/インターネット)・DMZ・内部(社内)の
+       セキュリティゾーンに分割する。
+ \item 外部(external)ゾーン: インターネット接続用の固定IPセグメントをひとつ持ち、
+       インターネット経由で外部へのサービスを提供できるようにする。
        \begin{itemize}
-        \item active/passive, passiveはパケット転送しない
-        \item tcp session state を同期する
-        \item 状態監視するインタフェースの設定、自動復旧設定とする
+        \item グローバルIPアドレスは外部ゾーンのみで使用する。DMZおよび
+              内部ゾーンではプライベートIPアドレスを使用する。社外(イン
+              ターネット)との必要な通信についてのみ、外部ゾーン境界(FW)
+              でNATをおこなう。
        \end{itemize}
- \item FWのフィルタ設定:
+ \item DMZゾーン: 外部に公開するサービスと内部に公開するサービスの中継を
+       おこなう。
        \begin{itemize}
-        \item 原則L3/L4でのフィルタ
-        \item tcp state をみる
-        \item DNSについてはL7(DPI)でフィルタする
+        \item SSL VPNサーバ: \tj との共同開発業務のために、インターネッ
+              ト経由で \tj 社からのリモートアクセスを受け付ける。\tj 社
+              VPNクライアントはVPN接続後、VPNサーバから割り当てられたDMZ
+              ゾーン内IPを使用して内部ゾーンの開発環境にアクセスする。
+        \item DNSサーバ: \yo 内部向けに提供する名前解決・サービス
        \end{itemize}
+ \item 内部(internal)ゾーン: 社内のみ利用可能な開発系サーバおよび社員(開
+       発用PC等)を設置する。
+       \begin{itemize}
+        \item 開発環境として、資産管理サーバ(Git)・内部テストサーバ
+              (Telnet/Jenkins)を起く。
+       \end{itemize}
+ \item アクセスポリシとして、原則、内部-外部ゾーン間の通信はおこなえない
+       ものとする。ただし、現状は内部ゾーン内機器からのNTPおよび
+       HTTP/HTTPS通信に関しては直接外部ゾーンへ通すことを許可する
+       \footnote{\tj は、\yo NW規模およびセキュリティポリシを検討した結
+       果、現時点ではProxyサーバ導入をおこなわないものとした。}。
 \end{itemize}
+
+なお、\tj の設計・構築範囲は \yo ネットワークである。\tj ネットワークに
+ついてはPoCの対象には含まれない。
 
 \begin{figure}[h]
  \centering
- \includegraphics[scale=0.55]{img/poc-env-logical.png}
+ \includegraphics[scale=0.5]{img/poc-env-logical.png}
  \caption{PoC環境: 論理構成図}
  \label{fig:poc-env-logical}
 \end{figure}
 
+\begin{table}[h]
+ \centering
+ \caption{セグメント/IPアドレス一覧}
+ \label{tab:ip-list}
+ \begin{threeparttable}
+  \begin{tabular}[t]{l|l|r|l}
+   \hline
+   Zone/Segment & IP Subnet & Local Host\tnote{1} & Host \\
+   \hline
+   \hline
+   外部 & 203.0.113.0/29 & 0 & [Network] \\ \cline{3-4}
+   & & 1 & Router \\ \cline{3-4}
+   & & 2 & Firewall \\ \cline{3-4}
+   & & 5 & SSLVPN ( \tj 社VPNアクセス) \\ \cline{3-4}
+   & & 6 & NAPT (内部/DMZからInternetへのアクセス) \\ \cline{3-4}
+   & & 7 & [Broadcast] \\ \hline
+   DMZ & 10.10.0.0/24 & 0 & [Network] \\  \cline{3-4}
+   & & 1 & Firewall (default gateway) \\ \cline{3-4}
+   & & 10 & DNSサーバ \\ \cline{3-4}
+   & & 11 & SSLVPNサーバ \\ \cline{3-4}
+   & & 128-254 & SSLVPN Client IP Pool \\ \cline{3-4}
+   & & 255 & [Broadcast] \\ \hline
+   内部 & 10.10.10.0/24 & 0 & [Network] \\ \cline{3-4}
+   & & 1 & 資産管理サーバ \\ \cline{3-4}
+   & & 2 & テスト環境サーバ \\ \cline{3-4}
+   & &  & 開発用PC \\ \cline{3-4}
+   & & 254 & Firewall (default gateway) \\ \cline{3-4}
+   & & 255 & [Broadcast] \\
+   \hline
+  \end{tabular}
+  \begin{tablenotes}
+   \footnotesize
+   \item[1] 第4オクテット
+  \end{tablenotes}
+ \end{threeparttable}
+\end{table}
+
+    \paragraph{管理者要件}
+ネットワークや各種サービスを運用・管理するための要求を以下のように設定する。
+\begin{itemize}
+ \item サーバ管理アクセス: 内部/DMZゾーンにおかれるサーバについては、\yo
+       開発者が管理者を兼任しており、内部ゾーンから直接リモートアクセス
+       することで運用・管理作業をおこなう。(in-band management)
+ \item ネットワーク管理アクセス: ネットワーク機器の運用管理については、
+       構築した \tj 社員をおくことを想定し、\yo ネットワークとは分離した
+       設計とする。(VR/VRFを利用した論理・物理で分離する out-of-band な
+       管理ネットワーク構成。\figref{fig:poc-env-physical-detail} 物理設
+       計参照。)
+\end{itemize}
+
   \subsection{通信要件}
+
+利用者要件および管理者要件をふまえて、ネットワークで提供する通信要件は
+\tabref{tab:poc-requires-yo-int}, \tabref{tab:poc-requires-yo-dmz},
+\tabref{tab:poc-requires-etc} のようになる。
 
 \begin{landscape}
  \begin{table}[h]
@@ -167,9 +330,9 @@ No.3-4に相当する技術の基礎検証を実施した。本プロジェク�
 No. & ポリシ & アプリケーション & \multicolumn{2}{|l|}{Source IP} & \multicolumn{2}{l|}{Destination IP} & Destination Port \\
 \hline
 \hline
-1 & PC→開発環境 & AP1アクセス & PC & 10.10.10.0/24 & 資産管理サーバ & 10.10.10.1 & tcp/11000 \\ \hline
-2 & PC→開発環境 & AP2アクセス & PC & 10.10.10.0/24 & テスト環境サーバ & 10.10.10.2 & tcp/23 \\ \hline
-3 & PC→開発環境 & AP3アクセス & PC & 10.10.10.0/24 & テスト環境サーバ & 10.10.10.2 & tcp/13000 \\ \hline
+1 & PC→開発環境 & Git & PC & 10.10.10.0/24 & 資産管理サーバ & 10.10.10.1 & tcp/11000 \\ \hline
+2 & PC→開発環境 & Telnet & PC & 10.10.10.0/24 & テスト環境サーバ & 10.10.10.2 & tcp/23 \\ \hline
+3 & PC→開発環境 & Jenkins & PC & 10.10.10.0/24 & テスト環境サーバ & 10.10.10.2 & tcp/13000 \\ \hline
 4 & PC→開発環境 & サーバ管理: ssh & PC & 10.10.10.0/24 & 資産管理サーバ & 10.10.10.1 & tcp/22,80,443 \\ \hline
 5 & PC→開発環境 & サーバ管理: ssh & PC & 10.10.10.0/24 & テスト環境サーバ & 10.10.10.2 & tcp/22,80,443 \\ \hline
 6 & PC→DNSサーバ & DNS Query & PC & 10.10.10.0/24 & DNSサーバ & 10.10.0.10 & tcp,udp/53 \\ \hline
@@ -189,6 +352,10 @@ No. & ポリシ & アプリケーション & \multicolumn{2}{|l|}{Source IP} & \
  \end{table}
 \end{landscape}
 
+% AP1 : Git
+% AP2 : Telnet
+% AP3 : Jenkins
+
 \begin{landscape}
  \begin{table}[h]
   \centering
@@ -207,9 +374,9 @@ No. & ポリシ & アプリケーション & \multicolumn{2}{|l|}{Source IP} & \
 16 & DMZ→NTP & NTP Query & DMZ内サーバ & 10.10.0.0/25 & Internet & ANY & udp/123 \\ \hline
 17 & PC→DNSサーバ & ヨ社内部 & PC & 10.10.10.0/24 & DNSサーバ & 10.10.0.10 & tcp,udp/53 \\ \hline
 18 & PC→DMZ & サーバ管理: ssh & PC & 10.10.10.0/24 & DMZ内サーバ & 10.10.0.0/25 & tcp/22,80,443 \\ \hline
-19 & VPNPOOL→開発環境 & AP1アクセス & DMZ VPN Pool & 10.10.0.128/25 & 資産管理サーバ & 10.10.10.1 & tcp/11000 \\ \hline
-20 & VPNPOOL→開発環境 & AP2アクセス & DMZ VPN Pool & 10.10.0.128/25 & テスト環境サーバ & 10.10.10.2 & tcp/23 \\ \hline
-21 & VPNPOOL→開発環境 & AP3アクセス & DMZ VPN Pool & 10.10.0.128/25 & テスト環境サーバ & 10.10.10.2 & tcp/13000 \\ \hline
+19 & VPNPOOL→開発環境 & Git & DMZ VPN Pool & 10.10.0.128/25 & 資産管理サーバ & 10.10.10.1 & tcp/11000 \\ \hline
+20 & VPNPOOL→開発環境 & Telnet & DMZ VPN Pool & 10.10.0.128/25 & テスト環境サーバ & 10.10.10.2 & tcp/23 \\ \hline
+21 & VPNPOOL→開発環境 & Jenkins & DMZ VPN Pool & 10.10.0.128/25 & テスト環境サーバ & 10.10.10.2 & tcp/13000 \\ \hline
 22 & DMZ→Internet & 応答確認: ping/traceroute & DMZ内サーバ & 10.10.0.0/25 & Internet & ANY & icmp \\ \hline
 23 & DMZ→ヨ社内部 & 応答確認: ping/traceroute & ヨ社内部 & 10.10.10.0/24 & DMZ内サーバ & 10.10.0.0/25 & icmp \\ \hline
 24 & ヨ社内部→DMZ & 応答確認: ping/traceroute & DMZ内サーバ & 10.10.0.0/25 & ヨ社内部 & 10.10.10.0/24 & icmp \\ \hline
