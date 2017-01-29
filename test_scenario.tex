@@ -45,7 +45,20 @@
 
 \subsection{動的なテストの実装}
 
-障害試験シナリオを書く – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/238169066}
+% 障害試験シナリオを書く – NetTester
+% \url{https://3.basecamp.com/3088280/buckets/867009/todos/238169066}
+
+PoC環境(詳細は\figref{fig:poc-env-physical-detail})では
+\figref{fig:poc-env-linkdown}のようにtester set 1を「動的なふるまいのテ
+スト」用に使用するよう設計している。PoCでは、\yo 内部ネットワークの中心
+となるFWの冗長化機能試験をおこなう。そのため、テストシナリオではFWの
+Active/Passive切替トリガとなるActive側(FW1)リンクダウン/リンクアップ操作
+を実装する。物理リンク操作のため物理OpenFlowスイッチ(OFS1)へ以下の2リン
+クをそれぞれ引き込んでいる。
+\begin{itemize}
+ \item L3SW-FW1 間リンク (FW1 Uplink)
+ \item FW1-L2SW1 間リンク (FW1 Downlink)
+\end{itemize}
 
 \begin{figure}[h]
  \centering

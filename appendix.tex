@@ -4,26 +4,237 @@
 
  \section{Expectacle}
  \label{sec:expectacle}
+ % tftp server – NetTester
+ % \url{https://3.basecamp.com/3088280/buckets/867009/documents/268762822}
+ % GitHub - stereocat/expectacle
+ % \url{https://github.com/stereocat/expectacle/tree/develop}
 
-tftp server – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/documents/268762822}
+テストシナリオ実装の際、テスト対象機器へのコマンド発行(teardown処理)をお
+こなうためにExpectacle\footnote{GitHub - stereocat/expectacle
+\url{https://github.com/stereocat/expectacle/tree/develop}}というツール
+を使用している。Expectacle はあらかじめ作成したコマンド(列)を指定した機
+器情報に基づいて順に送信する単純なツールである。詳細な使用方法については
+Expectacle README にあるためここでは扱わない。本PoCで利用した際の注意事
+項について解説する。
 
-GitHub - stereocat/expectacle: Simple expect wrapper to send commands to devices. \url{https://github.com/stereocat/expectacle/tree/develop}
+Expectacle が使用する操作対象機器情報・コマンド列ではERBを使った変数の展
+開ができる。本PoCでは、操作対象情報のうちそのまま設定ファイルに記入して
+リポジトリへ登録してはいけない秘密情報(ログインユーザ名・パスワード)を設
+定するために環境変数展開を使用した。例として、L2/L3スイッチの操作に関し
+ての操作対象情報は
+\lstref{lst:l2sw1-login}\footnote{\url{https://github.com/net-tester/examples/blob/develop/features/support/expectacle/hosts/c3750g_hosts.yml}}
+のようになる。
+\begin{lstlisting}[caption=L2スイッチ(L2SW1)ログイン情報,label=lst:l2sw1-login]
+- :hostname : 'l2sw1'
+  :type : 'c3750g'
+  :ipaddr : '192.168.20.150'
+  :protocol : 'ssh'
+  :username : "<%= ENV['L2SW_USER'] %>"
+  :password : "<%= ENV['L2SW_PASS'] %>"
+  :enable : "<%= ENV['L2SW_PASS'] %>"
+\end{lstlisting}
+\lstref{lst:l2sw1-login}ではログインユーザ名(\verb|L2SW_USER|)とパスワー
+ド(\verb|L2SW_PASS|, ログイン/イネーブルが同一パスワード)を環境変数を参
+照して設定している。そのため、テストシナリオ実行前に
+\lstref{lst:l2sw1-login-envvar}のように環境変数を定義しておく。
+\begin{lstlisting}[language=sh,caption=ログイン情報環境変数の設定,label=lst:l2sw1-login-envvar]
+export L2SW_USER=username
+export L2SW_PASS=password
+\end{lstlisting}
 
-\section{Debugging Trema}
+環境変数によるパスワード等の設定は、そのままではコマンドヒストリ等に残っ
+てしまうことがあるため、実行方法に注意が必要である\footnote{Expectacleで
+は標準入力から環境変数の値を設定するスクリプトを同梱している:
+\url{https://github.com/stereocat/expectacle/blob/develop/exe/readne}}。
+Expectacleの機能は\tabref{tab:test-functions}の No.1 (NW機器の設定・操作)に
+相当する。この機能は本プロジェクトの主要なスコープとしていないため、この
+ような簡易な方法を採用している。
 
-謎PacketInで死なずにログを出す – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/221324759}
+ \section{Debugging Trema}
+ \label{sec:debugging-trema}
+% 謎PacketInで死なずにログを出す – NetTester
+% \url{https://3.basecamp.com/3088280/buckets/867009/todos/221324759}
+% - Tremaのエラーログを出す – NetTester
+%   \url{https://3.basecamp.com/3088280/buckets/867009/todos/210777914}
+% - 今日なにした? – NetTester
+%   \url{https://3.basecamp.com/3088280/buckets/867009/questions/181826801/answers/2016-09-08#__recording_221236017}
 
+本プロジェクトの実行にあたって発生したOpenFlow関連の問題についての対処方
+法(Tips)をまとめる。
+
+  \subsection{Trema.logger}
+  \label{sec:trema-logger}
+
+当初、NetTester OFCのテーブルミスアクションを\code{CONTROLLER}として
+packet-inを発生させるようにしていた。このとき、特定パケット(フレーム)の
+packet-inに対して OFC (Trema) がエラーで停止しまうという問題が発生した
+(\ref{sec:flow-priority-design}節参照)。この問題にあたって、Trema開発チー
+ムの協力により、Tremaの内部ログを取得するための、\code{Trema.logger} API
+が追加されている\footnote{Logger - Trema - Relish
+\url{http://www.relishapp.com/trema/trema/docs/logger}}。
+
+\code{Trema.logger}の使用方法は一般的なロガーと同様であり、Trema内部にロ
+グメッセージを挿入していくことで、Tremaの内部情報のログを取得することが
+できる。たとえば使用例は\lstref{lst:trema-logger-example}のようになる。
+\begin{lstlisting}[caption=\code{Trema.logger}使用例,label=lst:trema-logger-example]
+# lib/trema/switch.rb
+def expect_receiving(expected_message_klass)
+  loop do
+    message = read
+    # コントローラが受け取った OpenFlow メッセージをデバッグプリント
+    Trema.logger.debug "Received an OpenFlow message: #{message.inspect}"
+\end{lstlisting}
+
+出力先のログファイルは \code{[ログディレクトリ]/trema.log} とな
+る。\code{Trema.logger}を実行し内部ログを取得する場合、次のように実行時
+ログレベルを指定する必要がある。
+\begin{lstlisting}[title=Trema実行時ログレベル指定(\code{-l}: log level option)]
+trema run -l debug <controller>.rb
+\end{lstlisting}
+または verbose オプションを指定する(ログレベルは debug になる)。
+\begin{lstlisting}[title=Trema実行時ログレベル指定(\code{-v}: verbose option)]
+trema -v run <controller>.rb
+\end{lstlisting}
+
+  \subsection{Packet-in Binary Analysis}
+  \label{sec:trema-packet-in-analysis}
+
+\label{sec:trema-logger}節の事例(特定packet-inによるOFCの停止)については、
+実際にpacket-inするバイナリを解析し、原因がTrema/Pio\footnote{trema/pio:
+Packet parser and generator in Ruby \url{https://github.com/trema/pio}}
+パケットパーサのバグであることを突き止めた。ここではその際のデバッグ方法
+を記載する。
+
+    \paragraph{OFCパケットキャプチャ}
+そもそもTremaがどういったタイミング・原因で停止するのかを調査するために、
+OFS-OFC間でやりとりされるOpenFlowメッセージのパケットキャプチャをとり、
+OFC停止タイミングとの突合せをおこなっている。これによって、あるパケット
+(フレーム)のpacket-inのタイミングでOFC停止が発生しているという仮説をたて
+た。
+
+    \paragraph{\code{Trema.logger}によるpacket-inのダンプ}
+Trema内部の問題を取得するために、\label{sec:trema-logger}節に示した
+\code{Trema.logger}を追加して、コントローラ停止時に処理しようとしていた
+packet-inのダンプを取得する(\lstref{lst:packet-in-dump})。
+\begin{lstlisting}[language=,caption=問題となるPacket-inの取得,label=lst:packet-in-dump]
+diff --git a/lib/trema/switch.rb b/lib/trema/switch.rb
+index 5a73005..d8c222e 100644
+--- a/lib/trema/switch.rb
++++ b/lib/trema/switch.rb
+@@ -34,7 +34,9 @@ module Trema
+     end
+
+     def read
+-      OpenFlow.read read_openflow_binary
++      openflow_binary = read_openflow_binary
++      Trema.logger.debug openflow_binary.unpack('C*').inspect
++      OpenFlow.read openflow_binary
+     end
+
+     private
+\end{lstlisting}
+
+これにより、\lstref{lst:packet-in-log}のようにpacket-inダンプが取得できた。
+\begin{lstlisting}[language=,caption=得られたPacket-in dump,label=lst:packet-in-log]
+ D, [2016-09-14T11:29:41.312256 #21392] DEBUG -- : [1, 10, 0, 146, 0, 0, 0, 0, 0, 0, 1, 24, 1, 216, 0, 4, 0, 0, 1, 0, 12, 204, 204, 204, 0, 30, 73, 27, 157, 7, 1, 202, 170, 170, 3, 0, 0, 12, 32, 0, 2, 180, 19, 106, 0, 1, 0, 25, 76, 49, 80, 74, 95, 76, 50, 83, 87, 49, 46, 108, 49, 112, 106, 46, 108, 111, 99, 97, 108, 0, 5, 0, 251, 67, 105, 115, 99, 111, 32, 73, 79, 83, 32, 83, 111, 102, 116, 119, 97, 114, 101, 44, 32, 67, 51, 55, 53, 48, 32, 83, 111, 102, 116, 119, 97, 114, 101, 32, 40, 67, 51, 55, 53, 48, 45, 73, 80, 83, 69, 82, 86, 73, 67, 69, 83, 75, 57, 45, 77, 41, 44, 32, 86, 101, 114, 115, 105, 111, 110, 32, 49, 50, 46, 50, 40, 53]
+D, [2016-09-14T11:29:41.313604 #21392] DEBUG -- : in Controller#start_switch_main(dpid=0x1), rescue (and unregister switch). error class:IOError, message:data truncated
+\end{lstlisting}
+
+    \paragraph{BinDataによる解析}
+\lstref{lst:packet-in-log}をBinData(Trema/PioはBinDataをベースに実装され
+ている)でパースして原因を調査する。パースは\lstref{lst:bindata-parse}の
+ように実行することができる。
+
+\begin{lstlisting}[language=,caption=BinDataによるパース,label=lst:bindata-parse]
+irb> BinData.trace_reading do
+irb>   Pio::OpenFlow.read [1, 10, 0, 146, 0, 0, 0, 0, 0, 0, 1, 24, 1, 216, 0, 4, 0, 0, 1, 0, 12, 204, 204, 204, 0, 30, 73, 27, 157, 7, 1, 202, 170, 170, 3, 0, 0, 12, 32, 0, 2, 180, 19, 106, 0, 1, 0, 25, 76, 49, 80, 74, 95, 76, 50, 83, 87, 49, 46, 108, 49, 112, 106, 46, 108, 111, 99, 97, 108, 0, 5, 0, 251, 67, 105, 115, 99, 111, 32, 73, 79, 83, 32, 83, 111, 102, 116, 119, 97, 114, 101, 44, 32, 67, 51, 55, 53, 48, 32, 83, 111, 102, 116, 119, 97, 114, 101, 32, 40, 67, 51, 55, 53, 48, 45, 73, 80, 83, 69, 82, 86, 73, 67, 69, 83, 75, 57, 45, 77, 41, 44, 32, 86, 101, 114, 115, 105, 111, 110, 32, 49, 50, 46, 50, 40, 53].pack('C*')
+irb> end
+obj.ofp_version => 1
+obj.message_type => 10
+obj.message_length => 146
+obj.transaction_id-internal-.xid => 0
+obj.transaction_id => 0
+obj.body => "\x00\x00\x01\x18\x01\xD8\x00\x..."
+obj.ofp_version => 1
+obj. => nil
+obj.message_type => 10
+obj. => nil
+obj.message_length => 146
+obj.transaction_id-internal-.xid => 0
+obj.transaction_id => 0
+obj.buffer_id => 280
+obj.total_len => 472
+obj.in_port => 4
+obj.reason-internal-.reason => 0
+obj.reason => :no_match
+obj.padding => 0
+IOError: data truncated
+        from /home/yasuhito/play/net-tester/vendor/bundle/ruby/2.3.0/gems/bindata-2.1.0/lib/bindata/io.rb:83:in `readbytes'
+        from /home/yasuhito/play/net-tester/vendor/bundle/ruby/2.3.0/gems/bindata-2.1.0/lib/bindata/string.rb:110:in `read_and_return_value'
+        from /home/yasuhito/play/net-tester/vendor/bundle/ruby/2.3.0/gems/bindata-2.1.0/lib/bindata/base_primitive.rb:124:in `do_read'
+        from /home/yasuhito/play/net-tester/vendor/bundle/ruby/2.3.0/gems/bindata-2.1.0/lib/bindata/trace.rb:58:in `do_read_with_hook'
+        from /home/yasuhito/play/net-tester/vendor/bundle/ruby/2.3.0/gems/bindata-2.1.0/lib/bindata/struct.rb:131:in `block in do_read'
+        from /home/yasuhito/play/net-tester/vendor/bundle/ruby/2.3.0/gems/bindata-2.1.0/lib/bindata/struct.rb:131:in `each'
+\end{lstlisting}
+
+ここから、packet-in メッセージの \verb|total_len| の値が不正だったことが判明した。
 \begin{itemize}
- \item Tremaのエラーログを出す – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/210777914}
- \item 今日なにした? – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/questions/181826801/answers/2016-09-08#__recording_221236017}
+ \item OpenFlow ヘッダの全体の長さ (\verb|message_length| = 146) は正しい。
+ \item 一方で \verb|PacketIn| の \verb|total_len| (PacketIn データの長さ)
+       がなぜか\footnote{原因詳細まで調査していない。} 471 となっている。
+ \item Pio はデータの長さを \verb|total_len| から取得するので、471 バイ
+       ト読もうとして失敗している。
 \end{itemize}
 
-send/receive message
+OpenFlow仕様によると、データ長は\verb|total_len|ではなく
+\verb|message_len|から取得するように記述があった\footnote{OpenFlow
+Switch Specification Version 1.0.0
+\url{http://archive.openflow.org/documents/openflow-spec-v1.0.0.pdf},
+``5.4.1 Packet-in Message''参照。}ため、Pioの\verb|PacketIn|を修正するこ
+とで問題は解決した\footnote{\url{https://github.com/trema/pio/pull/320}}。
+なお、修正後にパースをすると\lstref{lst:bindata-parse-re}ようになる。
 
-\begin{itemize}
- \item 今日なにした? – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/questions/181826801/answers/2016-09-27#__recording_241560820}
- \item 送受信メッセージログ – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/messages/241506055}
-\end{itemize}
+\begin{lstlisting}[language=,caption=Pio修正後の再確認,label=lst:bindata-parse-re]
+irb> Pio::OpenFlow.read [1, 10, 0, ... , 40, 53].pack("C*")
+=> #<PacketIn open_flow_version: 1, message_type: 10, message_length: 146, transaction_id: 0x0, buffer_id: 0x118, total_length: 128, in_port: 4, reason: :no_match, data: #<Pio::EthernetFrame destination_mac: "01:00:0c:cc:cc:cc", source_mac: "00:1e:49:1b:9d:07", ether_type: 0x01ca, rest: "\xAA\xAA\x03\x00\x00\f \x00\x02\xB4\x13j\x00\x01\x00\x19L1PJ_L2SW1.l1pj.local\x00\x05\x00\xFBCisco IOS Software, C3750 Software (C3750-IPSERVICESK9-M), Version 12.2(5">>
+\end{lstlisting}
+
+  \subsection{Trema送受信メッセージログ}
+
+% send/receive message
+% - 今日なにした? – NetTester
+%   \url{https://3.basecamp.com/3088280/buckets/867009/questions/181826801/answers/2016-09-27#__recording_241560820}
+% - 送受信メッセージログ – NetTester
+%   \url{https://3.basecamp.com/3088280/buckets/867009/messages/241506055}
+
+最新版のTrema\footnote{Debug print messages that are sent and received ·
+trema/trema@d80c4f8
+\url{https://github.com/trema/trema/commit/d80c4f8fa65ba3eadc046e5a6872aedc5b78501f}}
+では、\ref{sec:trema-logger}節・\ref{sec:trema-packet-in-analysis}節で実
+施したデバッグ作業をもとに、OFCが送受信したOpenFlowメッセージをログで取
+得できるようになっている。\lstref{lst:trema-ofmessage-debugprint}のよう
+に\code{-v}(verbose)オプションを指定することで利用できる。
+(\ref{sec:trema-logger}節で解説したようにログファイル(\code{trema.log})
+にも出力される。)
+\begin{lstlisting}[language=,caption=OpenFlowメッセージのデバッグプリント,label=lst:trema-ofmessage-debugprint]
+% bundle exec trema -v run ./lib/hello_trema.rb -c trema.conf
+sudo ovs-vsctl add-br br0xabc
+sudo /sbin/sysctl -w net.ipv6.conf.br0xabc.disable_ipv6=1 -q
+sudo ovs-vsctl set bridge br0xabc protocols=OpenFlow10 other-config:datapath-id=0000000000000abc
+sudo ovs-vsctl set-controller br0xabc tcp:127.0.0.1:6653 -- set controller br0xabc connection-mode=out-of-band
+sudo ovs-vsctl set-fail-mode br0xabc secure
+Trema started.
+Sending #<Pio::OpenFlow10::Hello:0x000000011190a8 @format={:version=>1, :type=>0, :_length=>8, :transaction_id=>0}>
+Received #<Pio::OpenFlow10::Hello:0x0000000132c750>
+Sending #<Pio::OpenFlow10::Echo::Request:0x0000000131ccd8 @format={:version=>1, :type=>2, :_length=>8, :transaction_id=>0, :body=>""}>
+Received #<Pio::OpenFlow10::Echo::Reply:0x000000012ea288>
+Sending #<Pio::OpenFlow10::Features::Request:0x000000012c9560 @format={:version=>1, :type=>5, :_length=>8, :transaction_id=>0}>
+Received #<Pio::OpenFlow10::Features::Reply:0x000000012943d8>
+Hello 0xabc!
+Received #<Pio::OpenFlow10::Echo::Request:0x000000012099b8 @format={:version=>1, :type=>2, :_length=>8, :transaction_id=>0, :body=>""}>
+Sending #<Pio::OpenFlow10::Echo::Reply:0x000000011ef338 @format={:version=>1, :type=>3, :_length=>8, :transaction_id=>0, :body=>""}>
+...
+\end{lstlisting}
 
 \section{Phut Basics}
 \label{sec:phut_basics}

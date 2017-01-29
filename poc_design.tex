@@ -133,7 +133,10 @@ NetTesterを実装し、実際のテスト(ユースケース)としてどうい
 
 PoCにあたって\figref{fig:poc-situation}のように登場人物を設定した。
 \begin{itemize}
- \item ヨーヨーダイン社\footnote{架空の企業名}
+ \item ヨーヨーダイン社\footnote{架空の企業名, ヨーヨーダイン -
+       Wikipedia
+       \url{https://ja.wikipedia.org/wiki/\%E3\%83\%A8\%E3\%83\%BC\%E3\%83\%A8\%E3\%83\%BC\%E3\%83\%80\%E3\%82\%A4\%E3\%83\%B3}
+       参照。}
        \begin{itemize}
         \item タジマックス通信工業社と共同でソフトウェア開発をおこなって
               いる。
@@ -141,7 +144,8 @@ PoCにあたって\figref{fig:poc-situation}のように登場人物を設定し
               の設計・構築についてもタジマックス通信工業社に発注すること
               になった。
        \end{itemize}
- \item タジマックス通信工業社\footnote{架空の企業名}(以降 \tj )
+ \item タジマックス通信工業社\footnote{架空の企業名, プロジェクトメンバ
+       の氏名から。}(以降 \tj )
        \begin{itemize}
         \item ソフトウェア開発および情報システム基盤の設計・構築などをお
               こなっている。
@@ -212,6 +216,8 @@ L1-L4までの機能的な要件設定とし、(可用性を除く)非機能要�
  %        - 原則L3/L4でのフィルタ
  %        - tcp state をみる
  %        - DNSについてはL7(DPI)でフィルタする
+
+ % - IPアドレス表 \url{https://drive.google.com/open?id=1v0ecUjUql3cxVMP8gvLyq4T9PEIeUeyMT_-9YrR4l0A}
 
   \subsection{論理ネットワーク設計}
   \label{sec:logical-nw-design}
@@ -309,9 +315,7 @@ L1-L4までの機能的な要件設定とし、(可用性を除く)非機能要�
        することで運用・管理作業をおこなう。(in-band management)
  \item ネットワーク管理アクセス: ネットワーク機器の運用管理については、
        構築した \tj 社員をおくことを想定し、\yo ネットワークとは分離した
-       設計とする。(VR/VRFを利用した論理・物理で分離する out-of-band な
-       管理ネットワーク構成。\figref{fig:poc-env-physical-detail} 物理設
-       計参照。)
+       設計とする。詳細については\ref{sec:mgmt-and-tester-nw}節参照。
 \end{itemize}
 
   \subsection{通信要件}
@@ -439,14 +443,8 @@ No. & ポリシ & アプリケーション & \multicolumn{2}{|l|}{Source IP} & \
        VLANによって論理的に分離する。
 \end{itemize}
 
-ネットワーク機器(FW, L2/L3スイッチ)への管理アクセスについては、L1-L3で分
-離する(\figref{fig:poc-env-physical-detail}参照)。
-\begin{itemize}
- \item Firewall: 管理用VRを設定し、管理用VRへ接続するインタフェースおよ
-       びVLANをサービス用のものと分離する。
- \item L2/L3スイッチ: 管理用VRFを設定し、管理用VRFへ接続するインタフェー
-       スおよびVLANをサービス用のものと分離する。
-\end{itemize}
+管理系ネットワークについてはサービス系ネットワークと分離する。詳細につい
+ては\ref{sec:mgmt-and-tester-nw}節参照。
 
     \paragraph{冗長性}
 
@@ -496,14 +494,72 @@ No. & ポリシ & アプリケーション & \multicolumn{2}{|l|}{Source IP} & \
 
 % SSG, 当初使用していたのは 6.3.0r5.0
 
-\section{環境構成(NetTester)}
+ \section{環境構成(管理系およびテストシステム)}
+ \label{sec:mgmt-and-tester-nw}
+ % - Tester Set について
+ % - 構成図 \url{https://drive.google.com/open?id=0B2eRR_JxYJA5Nm1VbzBnR1FQMUk}
+ % - Syslogについて
 
+管理者要件(\ref{sec:logical-nw-design}節)のとおり、ネットワーク管理につ
+いては \yo サービスネットワークと分離した構成をとる。
+\figref{fig:poc-env-physical}のネットワーク機器(FW, L2/L3スイッチ)管理ア
+クセスについては、次のように out-of-band な管理ネットワークを構成する
+\figref{fig:poc-env-physical-detail})。
 \begin{itemize}
- \item Tester Set について
- \item 構成図 \url{https://drive.google.com/open?id=0B2eRR_JxYJA5Nm1VbzBnR1FQMUk}
- \item IPアドレス表 \url{https://drive.google.com/open?id=1v0ecUjUql3cxVMP8gvLyq4T9PEIeUeyMT_-9YrR4l0A}
- \item Syslogについて
+ \item Firewall: 管理用VRを設定し、管理用VRへ接続するインタフェースおよ
+       びVLANをサービス用のものと分離する。
+ \item L2/L3スイッチ: 管理用VRFを設定し、管理用VRFへ接続するインタフェー
+       スおよびVLANをサービス用のものと分離する。
 \end{itemize}
+
+    \paragraph{Tester set}
+\figref{fig:model-nettester}のように、NetTester server と対応する物理
+OpenFlowスイッチのペアを、本プロジェクトでは「Tester Set」と呼ぶ。
+NetTesterによるテスト作業は tester set の範囲内でおこなわれる。
+
+PoCにあたって、検証環境(\figref{fig:poc-env-physical-detail})内ではふた
+つのtester setを構築した。これは次の理由によるものである。
+\begin{itemize}
+ \item テストシナリオ実装のうち、並行して実装・テスト実行\footnote{テス
+       トシナリオの動作テスト}が可能なものについて並行作業可能にするため。
+ \item NetTesterのデバッグ、バグ再現調査などトラブルシュート対応のための
+       切りわけ手段として。機器故障や環境依存のある問題を切りわけ、作業
+       中断リスクを回避するため。
+\end{itemize}
+
+    \paragraph{Tester setによるテスト実装作業の制限}
+テスト実行は原則としてひとつのtester setで実行されることを想定する
+\footnote{ひとつのサーバ(OS)上で複数のNetTesterは実行できない。複数の
+NetTester serverをまたいで排他制御をおこなう制御はNetTesterではなく外部
+オーケストレータなどで実行する必要がある。}。並行作業や同時実行について
+は以下のような条件について考慮する必要がある。
+\begin{itemize}
+ \item テストシナリオ中で使用するテスト用ノード等のパラメタ重複: 例えば、
+       同一IPのテスト用ホストを生成するテストシナリオを、ひとつのテスト
+       対象ネットワーク内で同時に実行するような場合(デバッグや調査などで
+       同一シナリオを異なるtester setで同時に実行するといったケース)。
+ \item テスト実行中(実行前後)のテスト対象ネットワーク状態遷移: 例えば、
+       リンク障害試験(「動的なふるまいのテスト」)では、操作対象となる物
+       理リンクが1箇所となるためその物理リンクを制御可能なtester setはひ
+       とつだけに限られる。
+       \begin{itemize}
+        \item 同様に、テスト実行中にトポロジなどが変化する想定をおいてい
+              ない「静的なふるまいのテスト」も、「動的なふるまいのテスト」
+              と同時に実行することはできない。
+       \end{itemize}
+\end{itemize}
+
+\figref{fig:poc-env-physical-detail}ではtester set 1を「動的なふるまいの
+テスト」用に使用するように設計している。テスト対象が物理ネットワークであ
+り、ひとつのインスタンスからのみ操作可能なリソースがある点に注意が必要で
+ある\footnote{NetTesterに外部から操作可能なAPIを実装して連携させるといっ
+た応用も考えられるが、こうした応用は本プロジェクトの目標範囲外となる。}
+
+    \paragraph{物理構成図補足}
+\figref{fig:poc-env-physical-detail}にあるSSG5はFW(FW1/2)の設定や動作確
+認用に使用したものである(OSはFW1/2と同様: \tabref{tbl:device-list}参照)。
+NetTester開発やテストシナリオ実装にあたって、FWの設定や挙動をテストシナ
+リオ上から確認し、問題点の切りわけをおこなうために利用した。
 
 \begin{landscape}
  \begin{figure}[h]

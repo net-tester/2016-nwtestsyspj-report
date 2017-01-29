@@ -556,7 +556,7 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
 信されたフレームのVLAN Tagをはずす処理をしているが、どこでVLAN Tagのつけ
 はずしをおこなうかによって実装が変化する(VLAN制御ポイントや実装比較につ
 いては\ref{sec:vlan_control_point}参照)。いずれにせよソフトウェアスイッ
-チで\verb|action=FLOOD|とするため、ブロードキャストはセグメントによらず
+チで\verb|actions=FLOOD|とするため、ブロードキャストはセグメントによらず
 全てのテスト用ノードへ送信される。
 
   \subsection{VLAN制御ポイントの比較}
@@ -737,8 +737,9 @@ OpenFlow/1.0では、テーブルミス\footnote{フローテーブル内のど�
 OFCでは動作を統一させるために明示的に指定する。当初、デバッグ用途もあり
 \code{actions=CONTROLLER}としていたが、Trema のパケットパーサ(Trema/Pio)
 で特定のパケットがパースできず、コントローラが停止するバグがあった
-\footnote{修正済: \url{https://github.com/trema/pio/pull/320}}ため、
-NetTesterでは default DROP を採用している。
+\footnote{修正済。デバッグについての補足情報については
+\ref{sec:debugging-trema}参照}ため、NetTesterでは default DROP を採用し
+ている。
 
   \section{リンク操作方式}
   \label{sec:link-operation}
