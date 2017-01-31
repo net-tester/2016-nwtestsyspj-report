@@ -78,10 +78,26 @@ end-to-end でのインテグレーションテストを行なう
 
 \begin{figure}[h]
  \centering
- \includegraphics[scale=0.6]{img/test-difference.png}
- \caption{インテグレーションテストとユニットテスト}
- \label{fig:test-difference}
+ \begin{minipage}[c]{0.45\columnwidth}
+  \centering
+  \includegraphics[width=\columnwidth]{img/test-difference.png}
+  \caption{インテグレーションテストとユニットテスト}
+  \label{fig:test-difference}
+ \end{minipage}
+ \begin{minipage}[c]{0.45\columnwidth}
+  \centering
+  \includegraphics[width=\columnwidth]{img/test-difference2.png}
+  \caption{ユニットテストの課題}
+  \label{fig:test-difference2}
+ \end{minipage}
 \end{figure}
+
+\begin{wrapfigure}{r}{16zw}
+ \vspace*{-\intextsep}
+ \includegraphics[width=16zw]{img/bdd-cycle.png}
+ \caption{BDDサイクル}
+ \label{fig:bdd-cycle}
+\end{wrapfigure}
 
 仕様(spec)にもとづいたインテグレーションテストを最初におこなうようにする
 ことで、以下のようなメリットがある。
@@ -97,13 +113,6 @@ BDDでは、まずインテグレーションテスト(仕様上期待される�
 Should TDD and BDD be used in conjunction? - Stack Overflow
 \url{http://stackoverflow.com/questions/33746804/should-tdd-and-bdd-be-used-in-conjunction}})
 。
-% BDD test cycle の図をいれる
-\begin{figure}[h]
- \centering
- \includegraphics[scale=0.5]{img/bdd-cycle.png}
- \caption{BDDサイクル}
- \label{fig:bdd-cycle}
-\end{figure}
 
 インテグレーションテストがパスすれば詳細なテストを省略し、インテグレーショ
 ンテストで失敗した場合にユニットテストを実施して原因の切り分け・修正をお
@@ -119,12 +128,15 @@ Should TDD and BDD be used in conjunction? - Stack Overflow
 いてテストによる品質担保とテスト対象(プロダクト)とのバランスを適切に保つ
 必要がある。ユニットテストなどの詳細化された機能単位のテストでは、個々の
 機能としての動作は確認できるが、複数の機能を組合せ・連結して最終的にどの
-ような動作をするか、というテストとの対応が結びつけにくい。こうした状況で
-は、往々にして「ユニットテストをもれなく作成すること」「テストカバレッジ
-を100\%にすること」が目的化されがちである。しかしもちろん、個々のユニッ
-トテストがパスしても、最終的にテスト対象となる製品が(利用者が求める)仕様
-を満たさなければ価値がない。BDDでは最終的に製品が満たすべき仕様に着目し、
-テスト対象が実現すべき価値の観点で無駄なテストを減らすことを想定している。
+ような動作をするか、というテストとの対応が結びつけにくい
+(\figref{fig:test-difference2})。
+
+こうした状況では、往々にして「ユニットテストをもれなく作成すること」「テ
+ストカバレッジを100\%にすること」が目的化されがちである。しかしもちろん、
+個々のユニットテストがパスしても、最終的にテスト対象となる製品が(利用者
+が求める)仕様を満たさなければ価値がない。BDDでは最終的に製品が満たすべき
+仕様に着目し、テスト対象が実現すべき価値の観点で無駄なテストを減らすこと
+を想定している。
 
  \section{理想像とプロジェクトのターゲット}
  \label{sec:desired-and-target}
