@@ -259,6 +259,8 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
     \cline{1-2}
     iproute2 & 4.3.0 & \\
     \hline
+    ethtool & 4.5 & NIC オフロード機能操作 \\
+    \hline
     Git & 2.7.4 & \\
     \hline
     Open vSwitch & 2.5.0 & SSWとして使用する。\tabref{tab:ofs-requirement}満たすこと。 \\
@@ -268,11 +270,37 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
    \end{tabularx}
   \end{table}
 
-  \paragraph{Open vSwitch(SSW)の設定}
+    \paragraph{Open vSwitch(SSW)の設定}
 NetTesterサーバ上のソフトウェアスイッチは、NetTester起動時に都度
 NetTesterが設定をおこなうため、事前に設定等をおこなう必要はない。
 NetTesterを起動すると、\ref{sec:nettester-model-restriction}節に示した
 DPIDでOpen vSwitchのブリッジが作成され、OFCとの接続設定がおこなわれる。
+
+    \paragraph{NICのハードウェアオフロード機能操作}
+    % trunkを使ってTCP通信するとおかしくなる – NetTester
+    % https://3.basecamp.com/3088280/buckets/867009/todos/368843648
+    % Netns Checksum Offload 機能実装 – NetTester
+    % https://3.basecamp.com/3088280/buckets/867009/todos/370752297
+NetTesterをつかったテストシナリオの実装・テスト実行にあたって、以下の条
+件でテスト用ノードが生成しているTCPパケットのチェックサムが incorrect と
+なり、正しく通信がおこなえないという事象がおきた。
+\begin{itemize}
+ \item テスト用ノードをテスト対象ネットワークに trunk port で接続させる
+       (OVSでVLAN Tagの操作をおこなう)
+ \item テストトラフィックとしてTCP通信をおこなう。
+       \begin{itemize}
+        \item SYN/FINフラグがついたトラフィックについては問題が発生しな
+              い。(TCPの特定のフラグがついたパケットで問題がおきる。)
+        \item ICMP通信については問題が発生しない。
+       \end{itemize}
+\end{itemize}
+
+根本的な原因究明はできていないが、ワークアラウンドとして、NetTesterでテ
+スト用ノード(Netns)を生成した際に、テスト用ノードへ接続するNIC(veth)で
+チェックサム計算のハードウェアオフロードをオフにしている
+\footnote{implement a work-around of tcp checksum error in vlan trunk by
+tjmtrhs · Pull Request \#7 · net-tester/net-tester
+\url{https://github.com/net-tester/net-tester/pull/7}}。
 
   \subsection{テストシナリオ (net-tester/examples) のインストール}
   \label{sec:deploy-test-cenario}
