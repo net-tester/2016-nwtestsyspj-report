@@ -29,8 +29,7 @@ NetTester Examples~\cite{nettester-ex}として公開している。}
 のツールと連携することを想定している。本PoCでは、「BDDによるネットワーク
 のテスト」を考えていること(\ref{sec:behavior-test}節)、広く使われている
 ツールであること、RubyベースでNetTesterとの親和性が高いことをもとに、BDD
-ツールであるCucumber\footnote{Cucumber \url{https://cucumber.io/}}を採用
-した。
+ツールであるCucumber\cite{cucumber}を採用した。
 
     \paragraph{Narrative}
     % Cucumber の .feature の書き方 – NetTester
@@ -80,23 +79,90 @@ Cucumberにおけるフィーチャとは、システムを利用するユーザ
 % Firewall の cucumber シナリオ – NetTester
 %   https://3.basecamp.com/3088280/buckets/867009/todos/158299550
 
-\subsection{静的なテストの実装}
-テストシナリオ策定の考えかた…そもそもなにをするテストなのか。どのような
-検討を経てテストシナリオをきめたのか。narrativeの定義のプロセスとか。
+ \section{静的なふるまいのテストの実装}
+% テストシナリオ策定の考えかた…そもそもなにをするテストなのか。どのような
+% 検討を経てテストシナリオをきめたのか。narrativeの定義のプロセスとか。
+% TODO: OOD資料にかいたようなテストコード解説のはなしをこちらにも含めるか?
+% - 実装
+%   - Step2テスト業務で気づいたことをまとめる – NetTester
+%     \url{https://3.basecamp.com/3088280/buckets/867009/todos/260220903}
 
-OOD資料にかいたようなテストコード解説のはなしをこちらにも含めるか?
+  \subsection{テストとして実現したいこと}
+  \subsection{テスターに求められる機能}
+  \subsection{システム構成}
+
+ \section{動的なふるまいのテストの実装}
+% 障害試験シナリオを書く – NetTester
+% \url{https://3.basecamp.com/3088280/buckets/867009/todos/238169066}
+% Step2to3タスク検討
+% https://drive.google.com/open?id=0B2eRR_JxYJA5M1RGdEZaOFkxTFk
+
+  \subsection{テストとして実現したいこと}
+% NetTester機能拡張検討
+% https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view
+ネットワークは状況に応じて状態を変化させる。変化のトリガとして、例えば障
+害発生による冗長経路への切替、メンテナンスのための一部のデバイスの停止や
+切り離し・そのための通信経路迂回、ネットワーク機器の追加(拡張)や削除(縮
+小)などがある。
+
+「ネットワークの動的なふるまい」(\ref{sec:behavior-to-test}参照)では、ネッ
+トワークが状態変化するときに、ネットワーク利用者へ与える影響が許容範囲内
+かどうかをテストする。ネットワーク利用者への影響とは、ネットワーク状態遷
+移中に発生するトラフィックの継続可否、影響度・影響範囲(場所的な範囲や時
+間)である。例を以下にあげる。
 \begin{itemize}
- \item 実装
+ \item トラフィックの継続可否
        \begin{itemize}
-        \item Step2テスト業務で気づいたことをまとめる – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/260220903}
+        \item ロードバランサなどL7の情報にしたがってトラフィックを操作す
+              るような機器では、冗長系切替のときに、セッション情報などを
+              引きついでアプリケーション通信を維持することが求められる。
+              同様にNATなどの変換テーブルに基づいてトラフィックを操作す
+              る機器でも冗長系機器間で状態の同期が必要になる。
+        \item 系切替には隣接する機器も関連する。例えば、対象とする冗長系
+              のL1/L2の切替に Gratuitous ARP を使用する機器で、隣接する
+              L2スイッチのバグによって Gratuitous ARP 処理が正しくおこな
+              われず、全体としてトラフィックの継続に失敗した事例などがあ
+              る。
+       \end{itemize}
+ \item 影響度・影響範囲
+       \begin{itemize}
+        \item 状態変化によって予期しない現象が予期しない範囲でおこること
+              がある。範囲としては、物理的な場所(特定のスイッチの配下な
+              ど)・論理的な場所(特定のL2セグメントなど)複数の要素が考え
+              られる。
+        \item 仮想化によって物理構成と論理構成は分離されることが一般的で
+              ある。この際、物理構成操作のオペミスや論理構成操作のミス
+              (記述ミスや勘違い)によったわずかなミスの見落としがセグメン
+              ト全体をまきこむL2ループを引き起すことがある。
+        \item 機器のバグや設定ミス、そのほかの機能との併用による機器CPU
+              専有状況の発生などがあると、こうした系切替によるトラフィッ
+              クの維持・継続ができなかったり、想定した時間内に完了できな
+              いことがある。例として、多数のVLANを収容していたL3スイッチ
+              で、系切替の際のSTPトポロジ再計算処理によるCPU専有が発生し、
+              スイッチ配下のセグメント全域で広範囲にわたって切替時間の遅
+              延・それにともなうトラフィックの維持失敗(タイムアウト発生)
+              がおこってしまった事例などがある。
        \end{itemize}
 \end{itemize}
 
-\subsection{動的なテストの実装}
+いくつか例を挙げたが、これらの問題はネットワーク全体(系全体)の相互作用に
+影響される。ネットワークの場合はベンダや機器ごとに独自のOSやアーキテクチャ
+を持つものが多く、特定機能や製品を組み合わせたときの相性問題やキャパシティ
+問題、特定ハードウェアやソフトウェア(バージョン)のトラブルといった情報を
+共有することは難しい。また、複数の冗長化機能(複数の機器にまたがるものも
+含む)の連動する際、状態遷移のタイミングなどで機能単体では問題なく動作す
+る機能が複合した結果、問題が発生することもある\footnote{例として:
+OSPF/BGP収束時間差によるブラックホールやループの発生
+\cite{j3g14-packet-forwarding}など。}。こうした理由により、ネットワーク
+の操作・状態変化において、すべての影響を予想するのは非常に困難である。
 
-% 障害試験シナリオを書く – NetTester
-% \url{https://3.basecamp.com/3088280/buckets/867009/todos/238169066}
+動的なふるまいのテストでは、上に挙げた「トラフィックの継続可否」「影響度・
+影響範囲」のテストを自動化することを目標とする。
 
+  \subsection{テスターに求められる機能}
+  % 求められる機能、今回実装したもの
+
+  \subsection{システム構成}
 PoC環境(詳細は\figref{fig:poc-env-physical-detail})では
 \figref{fig:poc-env-linkdown}のようにtester set 1を「動的なふるまいのテ
 スト」用に使用するよう設計している。PoCでは、\yo 内部ネットワークの中心
@@ -123,7 +189,7 @@ Active/Passive切替トリガとなるActive側(FW1)リンクダウン/リンク
 \begin{itemize}
  \item Target network の状態
        \begin{itemize}
-        \item ARP Table のクリア
+        \item ARP Table のクリア (ランダムMAC問題)
         \item NAT Table のクリア
         \item Firewall の active/standby (自動復旧にしているのでとくにいれていない)
        \end{itemize}
@@ -177,6 +243,7 @@ step3
 \subsection{ネットワークの構築・運用プロセスに対する定性的な評価}
 評価・考察
 \begin{itemize}
+ \item 体制や役割分担/タスクとスキルセットについて: ref.\url{https://3.basecamp.com/3088280/buckets/867009/todos/260220903}
  \item テスト実装のコスト
  \item 繰り返し実行できることのメリット
        \begin{itemize}

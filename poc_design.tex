@@ -3,6 +3,10 @@
 \chapter{PoCターゲット設計}
 \label{chap:poc-target-design}
 
+% TODO: ここにたどりつく前段階の検討のはなしをいれるか?
+% アーキテクチャ検討_20160617.pptx
+% https://drive.google.com/open?id=0B2eRR_JxYJA5RXdPTzVLU1M4RzQ
+
  \section{PoCの概要}
  \label{sec:poc-overview}
 
@@ -133,10 +137,7 @@ NetTesterを実装し、実際のテスト(ユースケース)としてどうい
 
 PoCにあたって\figref{fig:poc-situation}のように登場人物を設定した。
 \begin{itemize}
- \item ヨーヨーダイン社\footnote{架空の企業名, ヨーヨーダイン -
-       Wikipedia
-       \url{https://ja.wikipedia.org/wiki/\%E3\%83\%A8\%E3\%83\%BC\%E3\%83\%A8\%E3\%83\%BC\%E3\%83\%80\%E3\%82\%A4\%E3\%83\%B3}
-       参照。}
+ \item ヨーヨーダイン社\footnote{架空の企業名\cite{yoyodyne}}
        \begin{itemize}
         \item タジマックス通信工業社と共同でソフトウェア開発をおこなって
               いる。
@@ -174,10 +175,8 @@ L1-L4までの機能的な要件設定とし、(可用性を除く)非機能要�
 
     \paragraph{機能要件}
 \yo および \tj が共同開発をおこなうための機能要件は次のようになる
-\footnote{平成25年度 ネットワークスペシャリスト試験の問題をもとに、架空
-の中小企業ネットワークとして設定している。
-\url{https://www.jitec.ipa.go.jp/1_04hanni_sukiru/mondai_kaitou_2013h25_2/2013h25a_nw_pm1_qs.pdf}}
-。
+\footnote{平成25年度のネットワークスペシャリスト試験の問題\cite{h25nwsp}
+をもとに、架空の中小企業ネットワークとして設定している。}。
 \begin{itemize}
  \item \yo は社内に開発環境を持つ。開発環境は社内からのみアクセス可能と
        する。

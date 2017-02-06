@@ -95,7 +95,7 @@ end-to-end でのインテグレーションテストを行なう
 \begin{wrapfigure}{r}{16zw}
  \vspace*{-\intextsep}
  \includegraphics[width=16zw]{img/bdd-cycle.png}
- \caption{BDDサイクル}
+ \caption{BDDサイクル\cite{bdd-cycle-figref}}
  \label{fig:bdd-cycle}
 \end{wrapfigure}
 
@@ -109,10 +109,7 @@ end-to-end でのインテグレーションテストを行なう
 
 BDDでは、まずインテグレーションテスト(仕様上期待されるふるまい)について
 のテストをおこない、問題があった場合に内部を詳細化したユニットテストに分
-割して原因をきりわけるようにする(\figref{fig:bdd-cycle}\footnote{図引用:
-Should TDD and BDD be used in conjunction? - Stack Overflow
-\url{http://stackoverflow.com/questions/33746804/should-tdd-and-bdd-be-used-in-conjunction}})
-。
+割して原因をきりわけるようにする(\figref{fig:bdd-cycle})。
 
 インテグレーションテストがパスすれば詳細なテストを省略し、インテグレーショ
 ンテストで失敗した場合にユニットテストを実施して原因の切り分け・修正をお
@@ -175,7 +172,7 @@ Should TDD and BDD be used in conjunction? - Stack Overflow
 
 このような通信試験においては、適切な場所(物理的・論理的な位置)にノードを
 設置すること、なるべく実際的な(実際利用されたときに発生するトラフィック
-にちかい)テストトラフィックを発生させることがポイントとなる。
+に近い)テストトラフィックを発生させることがポイントとなる。
 
     \paragraph{動的なふるまい}
 ネットワークは、耐障害性・拡張性を保証するために、ネットワーク機器間で相

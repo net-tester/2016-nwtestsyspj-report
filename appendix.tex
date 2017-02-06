@@ -10,12 +10,11 @@
  % \url{https://github.com/stereocat/expectacle/tree/develop}
 
 テストシナリオ実装の際、テスト対象機器へのコマンド発行(teardown処理)をお
-こなうためにExpectacle\footnote{GitHub - stereocat/expectacle
-\url{https://github.com/stereocat/expectacle/tree/develop}}というツール
-を使用している。Expectacle はあらかじめ作成したコマンド(列)を指定した機
-器情報に基づいて順に送信する単純なツールである。詳細な使用方法については
-Expectacle README にあるためここでは扱わない。本PoCで利用した際の注意事
-項について解説する。
+こなうためにExpectacle~\cite{expectacle}というツールを使用している。
+Expectacle はあらかじめ作成したコマンド(列)を指定した機器情報に基づいて
+順に送信する単純なツールである。詳細な使用方法についてはExpectacle
+README にあるためここでは扱わない。本PoCで利用した際の注意事項について解
+説する。
 
 Expectacle が使用する操作対象機器情報・コマンド列ではERBを使った変数の展
 開ができる。本PoCでは、操作対象情報のうちそのまま設定ファイルに記入して
@@ -70,8 +69,7 @@ packet-inを発生させるようにしていた。このとき、特定パケ�
 packet-inに対して OFC (Trema) がエラーで停止しまうという問題が発生した
 (\ref{sec:flow-priority-design}節参照)。この問題にあたって、Trema開発チー
 ムの協力により、Tremaの内部ログを取得するための、\code{Trema.logger} API
-が追加されている\footnote{Logger - Trema - Relish
-\url{http://www.relishapp.com/trema/trema/docs/logger}}。
+が追加されている~\cite{trema-logger-doc}。
 
 \code{Trema.logger}の使用方法は一般的なロガーと同様であり、Trema内部にロ
 グメッセージを挿入していくことで、Tremaの内部情報のログを取得することが
@@ -100,10 +98,9 @@ trema -v run <controller>.rb
   \label{sec:trema-packet-in-analysis}
 
 \label{sec:trema-logger}節の事例(特定packet-inによるOFCの停止)については、
-実際にpacket-inするバイナリを解析し、原因がTrema/Pio\footnote{trema/pio:
-Packet parser and generator in Ruby \url{https://github.com/trema/pio}}
-パケットパーサのバグであることを突き止めた。ここではその際のデバッグ方法
-を記載する。
+実際にpacket-inするバイナリを解析し、原因がTrema/Pio~\cite{pio}パケット
+パーサのバグであることを突き止めた。ここではその際のデバッグ方法を記載す
+る。
 
     \paragraph{OFCパケットキャプチャ}
 そもそもTremaがどういったタイミング・原因で停止するのかを調査するために、
@@ -187,12 +184,10 @@ IOError: data truncated
 \end{itemize}
 
 OpenFlow仕様によると、データ長は\verb|total_len|ではなく
-\verb|message_len|から取得するように記述があった\footnote{OpenFlow
-Switch Specification Version 1.0.0
-\url{http://archive.openflow.org/documents/openflow-spec-v1.0.0.pdf},
-``5.4.1 Packet-in Message''参照。}ため、Pioの\verb|PacketIn|を修正するこ
-とで問題は解決した\footnote{\url{https://github.com/trema/pio/pull/320}}。
-なお、修正後にパースをすると\lstref{lst:bindata-parse-re}ようになる。
+\verb|message_len|から取得するように記述があった\footnote{OpenFlow1.0
+Spec\cite{of10spec} ``5.4.1 Packet-in Message''参照。}ことから、Pioの
+\verb|PacketIn|を修正することで問題は解決した\cite{pio-pr320}。なお、修
+正後にパースをすると\lstref{lst:bindata-parse-re}ようになる。
 
 \begin{lstlisting}[language=,caption=Pio修正後の再確認,label=lst:bindata-parse-re]
 irb> Pio::OpenFlow.read [1, 10, 0, ... , 40, 53].pack("C*")
@@ -207,15 +202,12 @@ irb> Pio::OpenFlow.read [1, 10, 0, ... , 40, 53].pack("C*")
 % - 送受信メッセージログ – NetTester
 %   \url{https://3.basecamp.com/3088280/buckets/867009/messages/241506055}
 
-最新版のTrema\footnote{Debug print messages that are sent and received ·
-trema/trema@d80c4f8
-\url{https://github.com/trema/trema/commit/d80c4f8fa65ba3eadc046e5a6872aedc5b78501f}}
-では、\ref{sec:trema-logger}節・\ref{sec:trema-packet-in-analysis}節で実
-施したデバッグ作業をもとに、OFCが送受信したOpenFlowメッセージをログで取
-得できるようになっている。\lstref{lst:trema-ofmessage-debugprint}のよう
-に\code{-v}(verbose)オプションを指定することで利用できる。
-(\ref{sec:trema-logger}節で解説したようにログファイル(\code{trema.log})
-にも出力される。)
+最新版のTrema~\cite{trema-pr433}では、\ref{sec:trema-logger}節・
+\ref{sec:trema-packet-in-analysis}節で実施したデバッグ作業をもとに、OFC
+が送受信したOpenFlowメッセージをログで取得できるようになっている。
+\lstref{lst:trema-ofmessage-debugprint}のように\code{-v}(verbose)オプショ
+ンを指定することで利用できる。(\ref{sec:trema-logger}節で解説したように
+ログファイル(\code{trema.log})にも出力される。)
 \begin{lstlisting}[language=,caption=OpenFlowメッセージのデバッグプリント,label=lst:trema-ofmessage-debugprint]
 % bundle exec trema -v run ./lib/hello_trema.rb -c trema.conf
 sudo ovs-vsctl add-br br0xabc
@@ -241,10 +233,8 @@ Sending #<Pio::OpenFlow10::Echo::Reply:0x000000011ef338 @format={:version=>1, :t
 
 ここでは、NetTesterの内部実装およびNetTester自身のテストコードで使用され
 ているコードを元に、仮想ノード/仮想ネットワーク操作の処理実装の基礎につ
-いて解説する。NetTester内部では、Phut\footnote{trema/phut: Virtual
-network in seconds \url{https://github.com/trema/phut}}を使用してLinuxの
-仮想ネットワーク機能を操作している。なお、記載内容は 2016年9月時点のもの
-である。
+いて解説する。NetTester内部では、Phut~\cite{phut}を使用してLinuxの仮想ネッ
+トワーク機能を操作している。なお、記載内容は 2016年9月時点のものである。
 
 \subsection{Phutによる仮想ノード/仮想ネットワーク操作の概要}
 

@@ -73,9 +73,7 @@ NetTesterが使用する物理OpenFlowスイッチには\tabref{tab:ofs-requirem
     \paragraph{物理OpenFlowスイッチの設定}
 PicOSはOVS Mode (Open vSwitch)で使用する。物理スイッチ(PicOS OVS)では以
 下の設定をおこなう。下記設定事項についてはPicOSマニュアルおよびOpen
-vSwitchドキュメント\footnote{ovs-vswitchd.conf.db.5.txt
-\url{http://openvswitch.org/support/dist-docs/ovs-vswitchd.conf.db.5.txt}}
-も参照すること。
+vSwitchドキュメント~\cite{ovs-vswitchd-doc}も参照すること。
 \begin{itemize}
  \item パッチとして使用するすべてのポートの設定~\cite{l1pjtech}
        \begin{itemize}
@@ -227,16 +225,13 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
 導入にあたっての注意事項を以下に示す。
 \begin{itemize}
  \item \tabref{tab:nettester-software-stack}以外に必要な一般的な開発ツー
-       ル等については Build Essential\footnote{\code{sudo apt install
-       build-essential} ,
-       \url{http://packages.ubuntu.com/ja/precise/build-essential}.}など
-       で導入しておくこと。
+       ル等については Build Essential~\cite{build-essential-doc}などで導
+       入しておく\footnote{\code{sudo apt install build-essential}}こと。
  \item NetTesterで使用するRuby package(gem)はbundlerで自動的にインストー
        ルされる。GemについてはNetTesterリポジトリ内 \code{Gemfile}等を参
        照すること。
- \item Rubyについては
-       rbenv\footnote{\url{https://github.com/rbenv/rbenv}} などで複数の
-       rubyバージョンを管理する環境でもよい。
+ \item Rubyについてはrbenv~\cite{rbenv}などで複数のrubyバージョンを管理
+       する環境でもよい。
  \item NetTesterはバックエンドで\code{ip}コマンドを使用してNetwork
        Namespaceの操作をおこなっている\footnote{正確にはNetTesterが利用
        しているTrema/Phutが\code{ip}コマンドを使用している。
@@ -297,10 +292,8 @@ NetTesterをつかったテストシナリオの実装・テスト実行にあ�
 
 根本的な原因究明はできていないが、ワークアラウンドとして、NetTesterでテ
 スト用ノード(Netns)を生成した際に、テスト用ノードへ接続するNIC(veth)で
-チェックサム計算のハードウェアオフロードをオフにしている
-\footnote{implement a work-around of tcp checksum error in vlan trunk by
-tjmtrhs · Pull Request \#7 · net-tester/net-tester
-\url{https://github.com/net-tester/net-tester/pull/7}}。
+チェックサム計算のハードウェアオフロードをオフにしてい
+る~\cite{net-tester-pr7}。
 
   \subsection{テストシナリオ (net-tester/examples) のインストール}
   \label{sec:deploy-test-cenario}
@@ -411,9 +404,7 @@ NetTesterを使った処理の基本的な流れと、APIの基本的な使用�
 にあるふたつのL2スイッチ(L2SW)に、それぞれ1台ずつテスト用ノードを接続し
 てテスト作業をおこなうことを想定する。このとき、テスト用ノードの生成およ
 び配置・接続はNetTesterを使用しておこなう。また、テスト用ノードで実施す
-るテスト作業はPry\footnote{pry/pry: An IRB alternative and runtime
-developer console, \url{https://github.com/pry/pry}}を使用してad-hocに
-(手動で)実施する。
+るテスト作業はPry~\cite{pry}を使用してad-hocに(手動で)実施する。
 
 これをNetTester APIを用いて実装すると
 \lstref{lst:nettester_basic_example}のようになる\footnote{このスクリプト
