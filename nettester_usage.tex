@@ -19,6 +19,8 @@
   %     \url{https://3.basecamp.com/3088280/buckets/867009/todos/218484578}
   %     \url{https://docs.google.com/document/d/1_-pLOXSOLutRb1_-tlcb_FwLCHq3Y7zQxp79_qXjDiM/}
   %     (そんなに重要じゃないけど一応)
+  %   - 毎回ofsがcontrollerに繋いでくるのを待つ(10秒)のをどうにかしたい – NetTester
+  %     https://3.basecamp.com/3088280/buckets/867009/todos/211396447
 
 \ref{sec:nettester-model}節に示したとおり、NetTester は1台の物理OpenFlow
 スイッチを利用して、テスト対象ネットワークへの接続をおこなう(物理
@@ -43,7 +45,7 @@ NetTesterが使用する物理OpenFlowスイッチには\tabref{tab:ofs-requirem
          & Source/Destination MAC Address \\ \hline
   Action & Out-Port \\ \cline{2-2}
          & Push/Pop VLAN ID \\ \hline
-  Priority & Priority \\
+  Other & Priority \\
   \hline
  \end{tabular}
 \end{table}
@@ -87,8 +89,8 @@ vSwitchドキュメント~\cite{ovs-vswitchd-doc}も参照すること。
  \item 物理OpenFlowスイッチ(OVS Bridge)全体の設定
        \begin{itemize}
         \item BridgeでSTPを処理しない(\verb|stp_enable=false|)。
-        \item コントローラ(OFC)との接続が切断された際にテスト対象ネット
-              ワークから届くトラフィックを処理しない
+        \item OFCとの接続が切断された際にテスト対象ネットワークから届く
+              トラフィックを処理しない
               (\verb|fail_mode=secure|)\footnote{\code{fail\_mode}には
               secureとstandaloneの2種類がある。Standaloneを指定した場合、
               OFS(OVS Bridge)はOFCとの接続がきれた際に独立したL2スイッチ
@@ -100,14 +102,24 @@ vSwitchドキュメント~\cite{ovs-vswitchd-doc}も参照すること。
               \code{fail\_mode}デフォルト設定が異なっているため注意が必
               要である。利用する場合は明示的に\code{fail\_mode=secure}を
               設定すること。}。
-        \item (Optional) 物理OpenFlowスイッチとOFC(NetTester OFC)との接
-              続がタイミングにより切断されるなどの現象がある場合には、
-              Inactivity probe の値を調整する。
         \item NetTesterでは、利用する物理OpenFlowスイッチのDPIDを指定で
               きる(\ref{sec:nettester-envvar}参照)。PicOSでは
               \lstref{lst:psw-openflow-config}のようにOFC(NetTester
               Controller)情報およびDPIDの設定をおこなう\footnote{PoCでは
               物理OpenFlowスイッチのDPIDを\code{0x1}としている。}。
+        \item (Optional) OFSとOFCの接続に時間がかかる場合、OVSの
+              \verb|max_backoff|\footnote{OFSがOFCに接続を試みる際のイン
+              ターバルの指定。ミリ秒単位で指定でき、最小は1秒(
+              \code{max\_backoff=1000})である。}値を調整する
+              \cite{ovs-backoff-doc}。
+        \item (Optional) OFSとOFCとの接続がタイミングにより切断されるな
+              どの現象がある場合には、
+              \verb|inactivity_probe|\footnote{OFS-OFC間接続の中断時間
+              (idle time)の最大値。Inactivity probe で設定した時間
+              OFS-OFC間での通信が発生していない場合、OFSはOFCへprobeを送
+              信する(OFCがprobeに応答しない場合はコネクション切断と見な
+              して再接続をおこなう)。ミリ秒単位で指定する。0を指定するこ
+              とで設定が無効化される。} の値を調整する。
        \end{itemize}
 \end{itemize}
 
