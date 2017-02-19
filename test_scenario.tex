@@ -235,10 +235,92 @@ Active/Passive切替トリガとなるActive側(FW1)リンクダウン/リンク
  \label{fig:poc-env-linkdown}
 \end{figure}
 
+ \section{PoCの結果}
+
+  \subsection{実際に発見できた問題点}
+本PoCで、テストの実行によって実際に発見することができた物理ネットワーク
+の問題点について解説する。
+
+   \subsubsection{テスト対象ネットワークの設定不備の発見}
+ % DNSのテスト作る – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/301325453
+ % 通信要件\#29 B社PC→DMZ内のVPNサーバの疎通確認(SSLVPN) – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/233178490
+
+ % 通信要件\#10 A社内PC→インターネットの疎通確認(ICMP) – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/233175867
+ % 通信要件#27インターネット→ファイアウォールの疎通確認(ICMP) – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/233178319
+
+一般的な(人手による)疎通試験と同様に、pingやその他のアプリケーションによ
+る通信確認によって、テスト対象ネットワーク上の不備(要求される仕様と異な
+る)点あるいはそれにつながる事象を発見できた。
+
+    \paragraph{テスト対象ネットワークの設定ミス}
+テスト対象ネットワークを構築した際の設定ミスによる問題を発見した。主要な
+ものはFWのパケットフィルタルールの設定不備、NAT(NAPT)の設定ミスによるも
+のである。これらは「できなければいけないこと」ができていない(テストが失
+敗する)ことによって発見されたものである。以下に例を示す。
+\begin{itemize}
+ \item インターネットからNAT(VIP)を経由してDMZへアクセスする通信失敗(パ
+       ケットフィルタルールの設定漏れ)
+ \item \yo 内部ゾーンから外部ゾーン(internet)への通信失敗(NAPT設定ミス)
+ \item FWが持つIPに対するping失敗(FWデフォルトのping応答ポリシ設定漏れ)
+\end{itemize}
+
+    \paragraph{テスト作業者側(構築・運用側)の通信仕様の認識違い}
+\ref{sec:poc-casting}節に示したように、テストシナリオの実装や実行をおこ
+なった担当者は必ずしもネットワークやネットワーク機器のスペシャリストでは
+ない。
+
+FWのゾーン間通信についてのFWのポリシの認識不足\footnote{ゾーン間通信のデ
+フォルトポリシについて、当該機器を使用したことがあるネットワークエンジニ
+アとしては自明だったために明確に伝達がおこなわれていなかった。}から、\yo
+外部ゾーン(インターネット)から内部ゾーンへのping通信が可能と判断してテス
+トシナリオを実装してしまったケースがあった。実際には(要件どおり設定され
+た)FWによってこのテストが失敗し、認識違いがあったことが判明した。
+
+   \subsubsection{ネットワーク機器の動作不具合}
+   \label{sec:find-nw-device-bug}
+ % 原因切り分けメモ (muraki) – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/documents/217782147
+ % 調査: テスト環境でシナリオ実行すると2回目以降でコケる – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/218486066
+
+当初、静的なふるまいのテストのテストシナリオを実装し、動作させたときに、
+同一のテストシナリオが実行するたびに成功・失敗をくりかえすという事象があっ
+た。調査をすすめたところ、FWのARP処理の挙動について以下のような動作をし
+ていることがわかった。
+\begin{itemize}
+ \item NetTesterが生成するテスト用ノードでは、IPアドレスは一定だが、MAC
+       アドレスはテストシナリオ実行ごとにランダムに変更する。
+ \item FWにARP前のシナリオで実行したテスト用ノードのMACエントリが残って
+       いると、次のシナリオで実行した(IPは同一だがMACアドレスが異なる)ARPに
+       対して応答しない。(ARPエントリのクリアをおこなっても応答しない)
+ \item FWのARPエントリをクリアして、クライアントからTCP通信をおこなって
+       もFW(Gateway)からサーバ側へのARPが確認できず、MACを学習していない
+       にもかかわらず TCP SYN が送信されることがある。
+\end{itemize}
+
+これらの事象および当初仕様していたFWのOSバージョンが古かったことから、FW
+の不具合と判断し、FWのOSを更新する\footnote{\tabref{tbl:device-list}参照。
+FWは更新版6.3.0r22.0(2016/4月リリース)に対して当初は6.3.0r5.0(2010/9月リ
+リース)を使用していた\cite{screenos-releases}。}ことで解決した。
+
+  \subsection{静的なふるまいのテスト}
+TODO: テストとして実現したかったことに対してどういうったことができたのか。
+
+  \subsection{動的なふるまいのテスト}
+TODO
+step2/step3について実際にやれたことの話をまとめる。
+\begin{itemize}
+ \item 実装 (NAT IPの変更とかデモの話をどこまで含めるか?)
+ \item 結果
+\end{itemize}
+
  \section{テストシナリオ実装における検討ポイント}
 
   \subsection{Teardown処理}
-
 CI/CDといったプロセスを実現する上で、複数・任意のテストシナリオをまとめ
 て実行することが求められる(回帰テスト含む)。
 
@@ -269,7 +351,7 @@ CI/CDといったプロセスを実現する上で、複数・任意のテスト
 めの処理(teardown処理)を実装する必要がある。本PoCではL2-L4の状態に着目し
 て、以下のteardown操作を実装している。
 
-    \paragraph{Target network の状態操作}
+    \paragraph{テスト対象ネットワークの状態操作}
 テスト対象ネットワーク各機器のL2-L4の状態をクリアする(CLIによる各種
 \code{clear}コマンドの実行)。
 \begin{itemize}
@@ -288,10 +370,10 @@ CI/CDといったプロセスを実現する上で、複数・任意のテスト
     % 自作echoサーバーで通信開始時に10秒のラグが起きる問題 – NetTester
     % https://3.basecamp.com/3088280/buckets/867009/todos/274457003
 
-NetTesterでは、Network namespace でテスト用ホストを生成する。このときバッ
+NetTesterでは、Network namespace でテスト用ノードを生成する。このときバッ
 クエンドでは iproute2(\code{ip}コマンド)を使用している。iproute2 によっ
 て生成されたホスト(netns)では、\verb|/etc/netns/<netns>/| が etc ディレ
-クトリとしてマウントされる~\cite{iproute2-doc}。そのため、テスト用ホスト
+クトリとしてマウントされる~\cite{iproute2-doc}。そのため、テスト用ノード
 内部での名前解決などでは、実体としては \verb|/etc/netns/<netns>/hosts|,
 \verb|resolv.conf| を参照する。これらの設定ファイル等が正しく設定されて
 いないと名前解決がタイムアウトするなどの問題が発生する。
@@ -300,18 +382,47 @@ NetTesterでは、Network namespace でテスト用ホストを生成する。�
 物理OpenFlowスイッチには、テストのたびにフローエントリが登録される。その
 ため、テストの実行のたびにフローエントリのクリア処理が必要となる。
 
-本PoCでは、テスト用ホストのMACはテスト実行時にランダムに設定するよう実装
+本PoCでは、テスト用ノードのMACはテスト実行時にランダムに設定するよう実装
 したため、テスト実行をくりかえすと多数の不要なフローエントリが物理スイッ
-チ上に残る。テスト用ホストのMACアドレスを固定にすることでフローテーブル
+チ上に残る。テスト用ノードのMACアドレスを固定にすることでフローテーブル
 の消費は抑えられるが、異なる用途で同一のMACアドレスを使いまわすなどのケー
 スで、予期しない動作不具合が発生するおそれがある\footnote{NetTesterのテー
-ブル設計では、テスト用ホストのMACアドレスをキーとして、フロー優先度
+ブル設計では、テスト用ノードのMACアドレスをキーとして、フロー優先度
 (priority)による制御をおこなう(\ref{sec:flow-priority-design}参照)。同一
 MACアドレスを異なる用途で使いまわす場合、他の用途として設定したフローエ
 ントリとマッチしてしまい、狙ったパッチ動作が実現できない恐れがある。}点
 に注意すること。
 
-\section{並列実行と排他制御}
+    \paragraph{テスト用ノードのパラメタ設定の考えかた}
+    % テスト用ノード(host)のMAC addr を固定にするかどうか方針を決める。 – NetTester
+    % https://3.basecamp.com/3088280/buckets/867009/todos/218612153
+
+テスト用ノードのMACアドレス設定による不具合が見付かった際
+(\ref{sec:find-nw-device-bug}参照)、一時的にテスト用ノードのMACアドレス
+設定をテストシナリオ上で固定にすることで回避した。しかし、実際には
+teardown処理を実装し、テスト用ノードのMACアドレスはシナリオ実行時にラン
+ダムに設定されるようにした。これは次のような考えかたによる。
+\begin{itemize}
+ \item 通常、テスト対象に接続する機器のMACアドレスについて、テスト作業者
+       が意識していることはほとんどない。テストシナリオを記述する際にも
+       同様に、意識しなくてよいものを意識させなければいけない実装は避け、
+       テストシナリオの本質的な部分の実装に注力できるようにすべきである。
+       \begin{itemize}
+        \item もちろんテストシナリオとして常に指定したMACアドレスを使う
+              ことも可能である。テスト対象ネットワーク内の個々の機器につ
+              いて、ユニットテストで詳細な動作を調査するような場合にはこ
+              うした機能が必要になるが、本PoCでは「ふるまい」つまり要求
+              仕様ベースでのテストを主眼においており、そのレベルで本題で
+              ないパラメタ設定はテストシナリオ実装者に極力意識させないよ
+              うにする。
+       \end{itemize}
+ \item 物理的なテスト対象では、テスト対象インスタンスの状態を低コストで
+       クリアすることが難しく、teardown処理はテスト自動化において重要な
+       処理となる。一時的にMACアドレス等の設定で回避してしまうのではなく、
+       PoCを実行するうえで実用性があるかどうかを見極める必要がある。
+\end{itemize}
+
+\subsection{並列実行と排他制御}
 
 物理ネットワークをテストする場合、テスト対象(物理ネットワーク)は原則ひと
 つしかない。テストの数が多くなる場合、複数のテストを同時に実行することが
@@ -343,7 +454,7 @@ MACアドレスを異なる用途で使いまわす場合、他の用途とし�
  \item[ネットワークリソースの競合] テスト対象ネットワークで一意でなけれ
             ばならないリソースの操作については同時に実行できない。
             \begin{itemize}
-             \item テストシナリオA/Bが同じIP/MACを持つテスト用ホストを同
+             \item テストシナリオA/Bが同じIP/MACを持つテスト用ノードを同
                    時に生成してしまうと、テスト対象ネットワーク内で
                    IP/MACの重複が発生してしまう。
              \item 物理リンクの操作など、ひとつしか存在しないリソースの
@@ -376,34 +487,11 @@ tester setがあり、同時にひとつのテストシナリオを実行する�
  \item factory\_girl で仮想ホストを作る – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/documents/210831650}
 \end{itemize}
 
-\section{PoCの結果と評価}
+\subsection{Sleep tuning}
+step3 テストにおけるsleep調整など、課題、対応について。
 
-\subsection{実際に発見できた問題点}
-テストとしての結果まとめ
-\begin{itemize}
-  \item 結果: 実際に発見できたトラブルや設定ミスなどをあげる。
-       \begin{itemize}
-        \item Teardown関連
-              \begin{itemize}
-               \item 原因切り分けメモ (muraki) – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/documents/217782147}
-               \item 調査: テスト環境でシナリオ実行すると2回目以降でコケる – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/218486066}
-              \end{itemize}
-        \item Target Network の設定不備の発見
-              \begin{itemize}
-               \item DNSのテスト作る – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/301325453}
-               \item 通信要件\#10 A社内PC→インターネットの疎通確認(ICMP) – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/233175867}
-               \item 通信要件\#29 B社PC→DMZ内のVPNサーバの疎通確認(SSLVPN) – NetTester \url{https://3.basecamp.com/3088280/buckets/867009/todos/233178490}
-              \end{itemize}
-       \end{itemize}
-\end{itemize}
 
-step3
-\begin{itemize}
- \item 実装 (NAT IPの変更とかデモの話をどこまで含めるか?)
- \item 結果
-\end{itemize}
-
-\subsection{ネットワークの構築・運用プロセスに対する定性的な評価}
+\section{ネットワークの構築・運用プロセスに対する定性的な評価}
 評価・考察
 \begin{itemize}
  \item 体制や役割分担/タスクとスキルセットについて: ref.\url{https://3.basecamp.com/3088280/buckets/867009/todos/260220903}
