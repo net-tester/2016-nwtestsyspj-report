@@ -3,6 +3,9 @@
 \chapter{NetTesterの使いかた}
 \label{chap:nettester-usage}
 
+NetTesterによるテスト環境の構築方法やシステム要求、本PoCでの実際に使用し
+た構成や機器・ソフトウェアの情報、基本的な使用方法について解説する。
+
  \section{NetTesterのデプロイ}
  \label{sec:nettester-deployment}
 
@@ -29,7 +32,7 @@ OpenFlowスイッチを使用してテストトラフィックを''distribute''�
 
     \paragraph{物理OpenFlowスイッチの要件と選択}
 NetTesterが使用する物理OpenFlowスイッチには\tabref{tab:ofs-requirement}
-の要件が求められる~\cite{l1pjpoc}。
+の要件~\cite{l1pjpoc}が求められる。
 
 \begin{table}[h]
  \centering
@@ -52,7 +55,8 @@ NetTesterが使用する物理OpenFlowスイッチには\tabref{tab:ofs-requirem
 
 本プロジェクトでは昨年度実施した \lopj の環境を継続しており、
 \tabref{tab:psw-list}に示すOpenFlowスイッチを使用している~\cite{l1pjpoc}。
-(2台のOpenFlowスイッチを使用して Tester set を2セット構築している。)
+(2台のOpenFlowスイッチを使用して Tester
+set\footnote{\ref{sec:mgmt-and-tester-nw}節参照。} を2セット構築している。)
 % TODO: Tester set の説明
 
 \begin{table}[h]
@@ -247,7 +251,7 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
  \item NetTesterはバックエンドで\code{ip}コマンドを使用してNetwork
        Namespaceの操作をおこなっている\footnote{正確にはNetTesterが利用
        しているTrema/Phutが\code{ip}コマンドを使用している。
-       \ref{sec:phut_basics}参照。}。このときroot権限が必要になり
+       \ref{sec:phut_basics}節参照。}。このときroot権限が必要になり
        \code{sudo}を使用して実行する。\code{sudo}利用にあたって
        \code{PATH}まわりのエラーが発生する場合は\code{sudo}設定ファイル
        (\code{/etc/sudoers})の\code{secure\_path}設定を修正すること。
@@ -394,13 +398,13 @@ NetTesterは以下の2つの環境変数を使用する。
 \code{DPID=0x1}となる。テストシナリオ(NetTester Examples)では\code{rake}
 により複数のテストシナリオの一括実行(回帰テスト)を実行できる。
 \code{rake}実行時には次のように環境変数を指定して回帰テストを実行する。
-\begin{lstlisting}[title=回帰テスト実行時の環境変数指定]
+\begin{lstlisting}
 rake DEVICE=ens5 DPID=0x1 cucumber
 \end{lstlisting}
 
 この他にも、実際のテストシナリオ実行の際に、テスト対象ネットワーク機器操
-作のために使うツール(Expectacle, \ref{sec:expectacle}参照)でも環境変数を
-使用するので注意すること。
+作のために使うツール(\ref{sec:expectacle}節)でも環境変数を使用するので注
+意すること。
 
   \subsection{NetTester APIの基礎}
   \label{sec:nettester-api-basics}
@@ -422,7 +426,7 @@ NetTesterを使った処理の基本的な流れと、APIの基本的な使用�
 \lstref{lst:nettester_basic_example}のようになる\footnote{このスクリプト
 は解説用にパラメタ設定などを冗長に記載している。実際にテストシナリオ等を
 実装する場合は、より無駄のない形で記述することができる
-(\ref{sec:test-parameter-management}参照)。}。
+(\ref{sec:test-parameter-management}節参照)。}。
 % TODO: FactoryGirlの話とかへの参照をいれたい
 
 \begin{figure}[h]
@@ -482,7 +486,8 @@ NetTesterを使ったネットワークのテスト操作は次のステップ�
 \begin{enumerate}
  \item NetTesterを起動する
        \begin{itemize}
-        \item \verb|NetTester.run| (引数については\ref{sec:nettester-envvar}参照)
+        \item \verb|NetTester.run| (引数については
+              \ref{sec:nettester-envvar}節参照)
         \item 起動すると、SSWの設定とOFCの起動をおこなう。
               \lstref{lst:nettester_basic_example}ではOFC起動後にSSW/PSW
               の接続を待つために\code{sleep}を設定している。
@@ -491,7 +496,7 @@ NetTesterを使ったネットワークのテスト操作は次のステップ�
        \begin{itemize}
         \item \verb|NetTester::Netns.new| によって Network Namespace を
               使ったテスト用ノードを生成する。(詳細については
-              \ref{sec:phut_basics}参照)
+              \ref{sec:phut_basics}節参照)
         \item 生成と同時にテスト対象ネットワークへの配置(パッチ接続)をお
               こなう。引数\verb|virtual_port_number|および
               \verb|physical_port_number|は「パッチ」の両端点となるポー

@@ -3,10 +3,10 @@
 \chapter{NetTesterの技術仕様}
 \label{chap:nettester-design}
 
-\ref{chap:nettester-design}章では、本プロジェクトでNetTesterに実装した
-「パッチ」動作とフロー制御方式について解説する。テスト用ノードの操作につ
-いてはTrema/Phutを利用して実装されている。Phutの使いかたやNetTesterでの
-応用については\ref{sec:phut_basics}を参照のこと。
+本プロジェクトでNetTesterに実装した「パッチ」動作とフロー制御方式につい
+て解説する。テスト用ノードの操作についてはTrema/Phutを利用して実装されて
+いる。Phutの使いかたやNetTesterでの応用については\ref{sec:phut_basics}を
+参照のこと。
 
  \section{NetTesterのモデル}
  \label{sec:nettester-model}
@@ -103,7 +103,7 @@ PoC実施時点\footnote{2016年10月-12月}のNetTesterでは、
  \item ソフトウェアスイッチのDatapath ID (DPID)を固定している(SSW
        DPID=\code{0xdad1c001}\footnote{''daddy cool''})。物理スイッチの
        DPIDは環境変数により実行時指定が可能である
-       (\ref{sec:nettester-envvar}参照)。
+       (\ref{sec:nettester-envvar}節参照)。
 \end{itemize}
 これらのモデル定義および制限の設定は、NetTester 実装をシンプルにするため
 のものである。本プロジェクトでは、NetTester それ自体の機能拡張や拡張性の
@@ -367,11 +367,11 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
   \subsection{Broadcast制御案の比較と選択}
   \label{sec:l2bcctrl-compare}
 
-案1(\ref{sec:l2bcctrl-plan1})・案2(\ref{sec:l2bcctrl-plan2})のメリット・
-デメリットをまとめてみると\tabref{tab:l2bcctrl_compare}のようになる。本
-プロジェクトでは、その目的(\ref{sec:behavior-test})からツールとしての機
-能・拡張性よりもユースケース実証に重きをおく。そのため、構成のシンプルさ
-にみあった制御ルールのシンプルさが得られる案1を採用した。
+案1(\ref{sec:l2bcctrl-plan1}節)・案2(\ref{sec:l2bcctrl-plan2}節)のメリッ
+ト・デメリットをまとめてみると\tabref{tab:l2bcctrl_compare}のようになる。
+本プロジェクトでは、その目的(\ref{sec:behavior-test}節)からツールとして
+の機能・拡張性よりもユースケース実証に重きをおく。そのため、構成のシンプ
+ルさにみあった制御ルールのシンプルさが得られる案1を採用した。
 
 \begin{table}[h]
  \caption{L2 Broadcast 制御案 比較}
@@ -389,9 +389,9 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
  \end{table}
 
 複数OpenFlowスイッチ・DUTポート単位でのブロードキャスト制御(案2)について
-は、\lopjc で実証できている。本プロジェクトでユースケースを実証し、より
-複雑なシステム構成、拡張性が必要になった際は、案2を使用して制御ロジック
-を再実装することで実現が可能である。
+は、\lopj で実証できている。本プロジェクトでユースケースを実証し、より複
+雑なシステム構成、拡張性が必要になった際は、案2を使用して制御ロジックを
+再実装することで実現が可能である。
 
   \subsection{フロー制御設計の注意事項}
   % https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view
@@ -445,18 +445,18 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
 
 テストシステムとしては「パッチパネル」でテスト対象にテスト用ノードを直接
 接続した状況を忠実に再現できることが理想である。しかし、今回選択したフロー
-制御ルール(\ref{sec:l2bcctrl-plan1},案1)では、テスト対象ネットワークから
-テスト用ノードへのブロードキャストについては本来の「パッチパネル」の動作
-からははずれた動作をする。具体的には、あるテスト用ノードが接続されている
-「パッチ」には流れないはずのブロードキャストも、ソフトウェアスイッチで複
-製されてしまう。そのため、本来見えないはずの隣接ノードの情報(MACアドレス)な
-ども見えてしまう。
+制御ルール(\ref{sec:l2bcctrl-plan1}節; 案1)では、テスト対象ネットワーク
+からテスト用ノードへのブロードキャストについては本来の「パッチパネル」の
+動作からははずれた動作をする。具体的には、あるテスト用ノードが接続されて
+いる「パッチ」には流れないはずのブロードキャストも、ソフトウェアスイッチ
+で複製されてしまう。そのため、本来見えないはずの隣接ノードの情報(MACアド
+レス)なども見えてしまう。
 
 本プロジェクトでは、PoC(ユースケースの実証)を主要な目的とし、実装上は可
 能な限りシンプルにすることを方針としたため、こうした動作については許容す
-ることとした。また、\lopjc ではwire-groupによるブロードキャスト範囲の制
-限を試みており、より詳細なコントロールも可能であることも理由として挙げら
-れる。
+ることとした。また、\lopj ではwire-groupによるブロードキャスト範囲の制限
+を試みており、より詳細なコントロールも可能であることも理由として挙げられ
+る。
 % TODO, ref:PoC
 
 
@@ -490,7 +490,7 @@ VLAN Tagをどこでテスト用ノードで制御することも可能だが、
 VLAN Tagの制御をおこなっていた。NetTesterの実装もこれに従っている。
 \begin{itemize}
  \item テスト用ノードとしてVLAN Tagを利用できないノードも想定する。
- \item Wire-group(\ref{sec:l2bcctrl-plan2}参照)をつかった制御では、
+ \item Wire-group(\ref{sec:l2bcctrl-plan2}節)をつかった制御では、
        wire-group の情報をVLAN Tag を使用して実装する。そのため、VLAN
        Tagの制御を物理スイッチ・ソフトウェアスイッチの両方でおこなう必要
        がある。
@@ -542,8 +542,8 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
 ロードキャストの複製・転送先を判断する必要がある
 (\figref{fig:vlan-testee2tester-bcplan1})。
 
-ブロードキャスト制御として案1(\ref{sec:l2bcctrl-plan1}参照)を採用するた
-め、ソフトウェアスイッチに設定するブロードキャスト制御のルールは、原則
+ブロードキャスト制御として案1(\ref{sec:l2bcctrl-plan1}節)を採用するため、
+ソフトウェアスイッチに設定するブロードキャスト制御のルールは、原則
 \verb|in_port=1, actions=FLOOD|のルールのみとなる。
 \begin{figure}[h]
  \centering
@@ -555,9 +555,9 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
 \figref{fig:vlan-testee2tester-bcplan1}では物理スイッチ側でTesteeから送
 信されたフレームのVLAN Tagをはずす処理をしているが、どこでVLAN Tagのつけ
 はずしをおこなうかによって実装が変化する(VLAN制御ポイントや実装比較につ
-いては\ref{sec:vlan_control_point}参照)。いずれにせよソフトウェアスイッ
-チで\verb|actions=FLOOD|とするため、ブロードキャストはセグメントによらず
-全てのテスト用ノードへ送信される。
+いては\ref{sec:vlan_control_point}節)。いずれにせよソフトウェアスイッチ
+で\verb|actions=FLOOD|とするため、ブロードキャストはセグメントによらず全
+てのテスト用ノードへ送信される。
 
   \subsection{VLAN制御ポイントの比較}
   \label{sec:vlan_control_point}
@@ -692,7 +692,7 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
  % https://3.basecamp.com/3088280/buckets/867009/documents/217426690
 
 NetTesterはOpenFlow/1.0を使用するため、ひとつのフローテーブル内で優先度
-によるマッチ条件の使いわけをおこなう(\ref{sec:flow-design-premise}参照)。
+によるマッチ条件の使いわけをおこなう(\ref{sec:flow-design-premise}節)。
 一般的には、マッチ項目が多いルール(より複雑なマッチ条件を持つルール)を優
 先させる必要がある。
 
@@ -738,8 +738,8 @@ OFCでは動作を統一させるために明示的に指定する。当初、�
 \code{actions=CONTROLLER}としていたが、Trema のパケットパーサ(Trema/Pio)
 で特定のパケットがパースできず、コントローラが停止するバグがあった
 \footnote{修正済。デバッグについての補足情報については
-\ref{sec:debugging-trema}参照}ため、NetTesterでは default DROP を採用し
-ている。
+\ref{sec:debugging-trema}節を参照。}ため、NetTesterでは default DROP を
+採用している。
 
   \section{リンク操作方式}
   \label{sec:link-operation}
@@ -793,9 +793,9 @@ OpenFlowスイッチを仲介させることで物理トポロジ操作を可能
        状態変更操作をおこなう。
 \end{itemize}
 今回、NetTester では、物理OpenFlowスイッチにExpectベースのツール
-(\ref{sec:expectacle})でログイン/コマンド実行し、直接スイッチ上でポート
-状態変更する方法をとった。これは、PoC実施時点\footnote{2016年10月-12月}
-のTremaではまだPortModメッセージの送信が実装されていなかったためである。
+(\ref{sec:expectacle}節)でログイン/コマンド実行し、直接スイッチ上でポー
+ト状態変更する方法をとった。これは、PoC実施時点\footnote{2016年10月-12月}の
+TremaではまだPortModメッセージの送信が実装されていなかったためである。
 
 %% TODO/あと、以下のはなしどうする?
 

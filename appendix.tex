@@ -177,8 +177,8 @@ IOError: data truncated
 ここから、packet-in メッセージの \verb|total_len| の値が不正だったことが判明した。
 \begin{itemize}
  \item OpenFlow ヘッダの全体の長さ (\verb|message_length| = 146) は正しい。
- \item 一方で \verb|PacketIn| の \verb|total_len| (PacketIn データの長さ)
-       がなぜか\footnote{原因詳細まで調査していない。} 471 となっている。
+ \item 一方で \verb|PacketIn| の \verb|total_len| (PacketIn データの長さ)が
+       \footnote{原因詳細まで調査していない。} 471 となっている。
  \item Pio はデータの長さを \verb|total_len| から取得するので、471 バイ
        ト読もうとして失敗している。
 \end{itemize}
@@ -352,9 +352,10 @@ host.device = link.device('interface_name')
 \subsection{vSwitch}
 
 NetTester自体をテストするためのテストシナリオ
-\footnote{\code{features/step\_definitions/net\_tester\_physical\_switch\_steps.rb,
-net\_tester\_steps.rb}}実装の中で、NetTester本体の起動では以下のような処
-理をしている(\lstref{lst:run-nettester})。
+\footnote{\url{https://github.com/net-tester/net-tester/blob/develop/features/step_definitions/net_tester_physical_switch_steps.rb},
+\url{https://github.com/net-tester/net-tester/blob/develop/features/step_definitions/net_tester_steps.rb}}
+実装の中で、NetTester本体の起動では以下のような処理をしている
+(\lstref{lst:run-nettester})。
 \begin{lstlisting}[caption=NetTesterの起動,label=lst:run-nettester]
  Given(/^DPID が (\S+) の NetTester 物理スイッチ$/) do |dpid|
   @physical_test_switch = PhysicalTestSwitch.create(dpid: dpid.hex)
@@ -394,9 +395,9 @@ net\_tester\_steps.rb}}実装の中で、NetTester本体の起動では以下の
 NetTester 自身をテストする場合、テスト対象ネットワークに相当するものをテ
 ストシナリオ中で用意する必要がある。テスト対象として vSwitch を起動する
 場合は\lstref{lst:run-vswitch}のようにおこなう
-\footnote{\code{features/step\_definitions/ethernet\_switch\_steps.rb}}。
-\lstref{lst:run-vswitch}では、テスト対象として使用する vSwitch の起動お
-よびコントローラとの接続(Learning Switchとして動作させるため)をおこなっ
+\footnote{\url{https://github.com/net-tester/net-tester/blob/develop/features/step_definitions/ethernet_switch_steps.rb}}
+。\lstref{lst:run-vswitch}では、テスト対象として使用する vSwitch の起動
+およびコントローラとの接続(Learning Switchとして動作させるため)をおこなっ
 ている。
 
 \begin{lstlisting}[caption=vSwitchの起動,label=lst:run-vswitch]
@@ -407,7 +408,7 @@ end
 \end{lstlisting}
 
 テストシナリオ内部
-\footnote{\code{features/step\_definitions/net\_tester\_physical\_switch\_steps.rb}}
+\footnote{\url{https://github.com/net-tester/net-tester/blob/develop/features/step_definitions/net_tester_physical_switch_steps.rb}}
 では、テスト対象ネットワーク(\verb|@testee_switch|)と物理スイッチ
 (\verb|@physical_test_switch|)を接続するため、
 \lstref{lst:connect-vswitch}のような処理をおこなう。
@@ -438,9 +439,10 @@ end
 
 \subsection{テスト対象としての vHost の利用}
 
-\footnote{features/internal\_tests/p2p\_patch.feature}では、テスト対象ネッ
-NetTesterのテストシナリオネットワークに属するノードの生成・操作は
-\lstref{lst:create-testnode}のように記述している。
+ポート間パッチのテスト
+\footnote{\url{https://github.com/net-tester/net-tester/blob/develop/features/internal_tests/p2p_patch.feature}}
+では、テスト対象ネッNetTesterのテストシナリオネットワークに属するノード
+の生成・操作は\lstref{lst:create-testnode}のように記述している。
 
 \begin{lstlisting}[caption=テスト用ノードの生成,label=lst:create-testnode]
   Background:
@@ -454,7 +456,7 @@ NetTesterのテストシナリオネットワークに属するノードの生�
 \end{lstlisting}
 
 テストシナリオ内部
-\footnote{features/step\_definitions/p2p\_patch\_steps.rb}(\lstref{lst:operate-testnode})
+\footnote{\url{https://github.com/net-tester/net-tester/blob/develop/features/step_definitions/p2p_patch_steps.rb}}(\lstref{lst:operate-testnode})
 では、テストシナリオ(\lstref{lst:create-testnode})であたえられたテスト用
 ノードのパラメタを元に以下のようにノードを生成し、テストを実行する。
 
