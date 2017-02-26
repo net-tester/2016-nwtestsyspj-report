@@ -82,7 +82,7 @@ Cucumberにおけるフィーチャとは、システムを利用するユーザ
 % Firewall の cucumber シナリオ – NetTester
 %   https://3.basecamp.com/3088280/buckets/867009/todos/158299550
 
- \section{静的なふるまいのテストの実装}
+ \section{静的なふるまいのテスト}
 % テストシナリオ策定の考えかた…そもそもなにをするテストなのか。どのような
 % 検討を経てテストシナリオをきめたのか。narrativeの定義のプロセスとか。
 % TODO: OOD資料にかいたようなテストコード解説のはなしをこちらにも含めるか?
@@ -129,7 +129,108 @@ NetTesterはこうしたノードの生成・配置・集中制御の機能(API)
 (\tabref{tab:poc-requires-yo-int},\tabref{tab:poc-requires-yo-dmz},\tabref{tab:poc-requires-etc})
 ごとに定義する。
 
- \section{動的なふるまいのテストの実装}
+  \subsection{静的なふるまいのテストで実際に発見できた問題点}
+  \label{sec:statictest-founded-issues}
+
+静的なふるまいのテストでは、\yo ネットワーク通信要件
+(\tabref{tab:poc-requires-yo-int}・\tabref{tab:poc-requires-yo-dmz}・
+\tabref{tab:poc-requires-etc}; \ref{sec:network-requirements}参照)それぞ
+れについてテストシナリオを実装し、個々の要件に対してend-to-endの通信試験
+が自動化できることを実証した。テストの実行によって実際に発見することがで
+きた物理ネットワークの問題点について解説する。
+
+   \subsubsection{テスト対象ネットワークの設定不備の発見}
+ % DNSのテスト作る – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/301325453
+ % 通信要件\#29 B社PC→DMZ内のVPNサーバの疎通確認(SSLVPN) – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/233178490
+
+ % 通信要件\#10 A社内PC→インターネットの疎通確認(ICMP) – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/233175867
+ % 通信要件#27インターネット→ファイアウォールの疎通確認(ICMP) – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/233178319
+
+一般的な(人手による)疎通試験と同様に、pingやその他のアプリケーションによ
+る通信確認によって、テスト対象ネットワーク上の不備(要求される仕様と異な
+る)点あるいはそれにつながる事象を発見できた。
+
+    \paragraph{テスト対象ネットワークの設定ミス}
+テスト対象ネットワークを構築した際の設定ミスによる問題を発見した。主要な
+ものはFWのパケットフィルタルールの設定不備、NAT(NAPT)の設定ミスによるも
+のである。これらは「できなければいけないこと」ができていない(テストが失
+敗する)ことによって発見されたものである。以下に例を示す。
+\begin{itemize}
+ \item インターネットからNAT(VIP)を経由してDMZへアクセスする通信失敗(パ
+       ケットフィルタルールの設定漏れ)
+ \item \yo 内部ゾーンから外部ゾーン(internet)への通信失敗(NAPT設定ミス)
+ \item FWが持つIPに対するping失敗(FWデフォルトのping応答ポリシ設定漏れ)
+\end{itemize}
+
+    \paragraph{テスト作業者側(構築・運用側)の通信仕様の認識違い}
+\ref{sec:poc-casting}節に示したように、テストシナリオの実装や実行をおこ
+なった担当者は必ずしもネットワークやネットワーク機器のスペシャリストでは
+ない。
+
+FWのゾーン間通信についてのFWのポリシの認識不足\footnote{ゾーン間通信のデ
+フォルトポリシについて、当該機器を使用したことがあるネットワークエンジニ
+アとしては自明だったために明確に伝達がおこなわれていなかった。}から、\yo
+外部ゾーン(インターネット)から内部ゾーンへのping通信が可能と判断してテス
+トシナリオを実装してしまったケースがあった。実際には(要件どおり設定され
+た)FWによってこのテストが失敗し、認識違いがあったことが判明した。
+
+   \subsubsection{ネットワーク機器の動作不具合}
+   \label{sec:find-nw-device-bug}
+ % 原因切り分けメモ (muraki) – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/documents/217782147
+ % 調査: テスト環境でシナリオ実行すると2回目以降でコケる – NetTester
+ % https://3.basecamp.com/3088280/buckets/867009/todos/218486066
+
+当初、静的なふるまいのテストのテストシナリオを実装し、動作させたときに、
+同一のテストシナリオが実行するたびに成功・失敗をくりかえすという事象があっ
+た。調査をすすめたところ、FWのARP処理の挙動について以下のような動作をし
+ていることがわかった。
+\begin{itemize}
+ \item NetTesterが生成するテスト用ノードでは、IPアドレスは一定だが、MAC
+       アドレスはテストシナリオ実行ごとにランダムに変更する。
+ \item FWにARP前のシナリオで実行したテスト用ノードのMACエントリが残って
+       いると、次のシナリオで実行した(IPは同一だがMACアドレスが異なる)ARPに
+       対して応答しない。(ARPエントリのクリアをおこなっても応答しない)
+ \item FWのARPエントリをクリアして、クライアントからTCP通信をおこなって
+       もFW(Gateway)からサーバ側へのARPが確認できず、MACを学習していない
+       にもかかわらず TCP SYN が送信されることがある。
+\end{itemize}
+
+これらの事象および当初使用していたFWのOSバージョンが古かったことから、
+FW(OS)の不具合と判断し、FWのOSを更新する
+\footnote{\tabref{tbl:device-list}参照。FWは更新版6.3.0r22.0(2016/4月リ
+リース)に対して当初は6.3.0r5.0(2010/9月リリース)を使用していた
+\cite{screenos-releases}。}ことで解決した。
+
+   \subsubsection{L7レベルのFW挙動変化}
+今回のテストシナリオ実装では、当初L4レベルの通信確認から実装し、可能なも
+のについては実際のサーバ/クライアントを使用したL7レベルでの実装をおこなっ
+ている。L4レベルの通信確認としては、netcat を使った任意の tcp port
+listenとクライアントからの接続(tcpセッション確立/単純なサーバからの応答
+確認)を使用している。L7レベルのend-to-endテスト実装としては以下のシナリ
+オがある。
+\begin{itemize}
+ \item インターネットへのSSLアクセス(openssl, curlを使用したテストシナリ
+       オ実装): \verb|google_steps.rb|
+       \footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/step_definitions/google_steps.rb}}
+ \item SSHサーバヘのアクセス(opensshを使用したテストシナリオ実
+       装): \verb|ssh_steps.rb|\footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/step_definitions/ssh_steps.rb}}
+ \item DNSサーバへのアクセス(dnsmasqを使用したテストシナリオ実装):
+       \verb|dns_steps.rb|\footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/step_definitions/dns_steps.rb}}
+\end{itemize}
+
+特に、DNSのテストについては、当初 netcat によるL4レベル確認として実装し
+たが、テストが成功しなかった(FWを経由して通信ができなかった)。今回使用し
+たFW(SSG)の詳細なフィルタ仕様については調査していないが、このとき
+\code{dig}コマンド等による実際の名前解決はできていたことから、テストシナ
+リオとしてもdnsmasqによるL7レベルでのトラフィック生成シナリオを実装して
+いる。
+
+ \section{動的なふるまいのテスト}
 % 障害試験シナリオを書く – NetTester
 % \url{https://3.basecamp.com/3088280/buckets/867009/todos/238169066}
 % Step2to3タスク検討
@@ -256,90 +357,35 @@ ping(icmp)を一定間隔で送受信しておき、通信断等の影響がど�
 \footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/step_definitions/util.rb},
 \code{check\_connection}参照。}ことでおこなっている。
 
- \section{PoCの結果}
+  \subsection{動的なふるまいのテストとして実現できたこと}
 
-  \subsection{実際に発見できた問題点}
-本PoCで、テストの実行によって実際に発見することができた物理ネットワーク
-の問題点について解説する。
+動的なふるまいのテストとして、icmp/tcp でトラフィックを継続的にながしな
+がらFWのフェイルオーバー・フェイルバックをくりかえすテストを実装すること
+ができた。PoC環境において、FWフェイルオーバー・フェイルバックの動作で問
+題(テスト対象NWの不備)は特に発生しなかった。テスターおよびテストシナリオ
+実装上のポイントについては\ref{sec:testscenario-impl-point}節にまとめる。
 
-   \subsubsection{テスト対象ネットワークの設定不備の発見}
- % DNSのテスト作る – NetTester
- % https://3.basecamp.com/3088280/buckets/867009/todos/301325453
- % 通信要件\#29 B社PC→DMZ内のVPNサーバの疎通確認(SSLVPN) – NetTester
- % https://3.basecamp.com/3088280/buckets/867009/todos/233178490
-
- % 通信要件\#10 A社内PC→インターネットの疎通確認(ICMP) – NetTester
- % https://3.basecamp.com/3088280/buckets/867009/todos/233175867
- % 通信要件#27インターネット→ファイアウォールの疎通確認(ICMP) – NetTester
- % https://3.basecamp.com/3088280/buckets/867009/todos/233178319
-
-一般的な(人手による)疎通試験と同様に、pingやその他のアプリケーションによ
-る通信確認によって、テスト対象ネットワーク上の不備(要求される仕様と異な
-る)点あるいはそれにつながる事象を発見できた。
-
-    \paragraph{テスト対象ネットワークの設定ミス}
-テスト対象ネットワークを構築した際の設定ミスによる問題を発見した。主要な
-ものはFWのパケットフィルタルールの設定不備、NAT(NAPT)の設定ミスによるも
-のである。これらは「できなければいけないこと」ができていない(テストが失
-敗する)ことによって発見されたものである。以下に例を示す。
+テストシナリオ実装を通して、ネットワークの通信仕様変更が発生した際の対応
+プロセスについても検討している。今回は、\tj からの SSLVPN NAT IP の変更
+を題材としている。IP変更要求に対して、以下の手順でテストファーストに対応
+をすすえるためのデモンストレーション~\cite{nettester-demo-movie}を作成し
+た。
 \begin{itemize}
- \item インターネットからNAT(VIP)を経由してDMZへアクセスする通信失敗(パ
-       ケットフィルタルールの設定漏れ)
- \item \yo 内部ゾーンから外部ゾーン(internet)への通信失敗(NAPT設定ミス)
- \item FWが持つIPに対するping失敗(FWデフォルトのping応答ポリシ設定漏れ)
+ \item 変更要求にしたがって、対応するテストシナリオを修正する。
+ \item テストを実行する。(失敗するテストを書く)
+ \item テスト対象ネットワークの設定を変更要求に基づいて変更する。(テスト
+       対象の実装)
+ \item テストを実行する。(テストが通ることを確認する)
+ \item 変更対象のサービス(要求仕様/ふるまい)に影響を与えていないことを確
+       認するため、その他のテストシナリオをすべて再実行する。(回帰テスト
+       の実行)
 \end{itemize}
-
-    \paragraph{テスト作業者側(構築・運用側)の通信仕様の認識違い}
-\ref{sec:poc-casting}節に示したように、テストシナリオの実装や実行をおこ
-なった担当者は必ずしもネットワークやネットワーク機器のスペシャリストでは
-ない。
-
-FWのゾーン間通信についてのFWのポリシの認識不足\footnote{ゾーン間通信のデ
-フォルトポリシについて、当該機器を使用したことがあるネットワークエンジニ
-アとしては自明だったために明確に伝達がおこなわれていなかった。}から、\yo
-外部ゾーン(インターネット)から内部ゾーンへのping通信が可能と判断してテス
-トシナリオを実装してしまったケースがあった。実際には(要件どおり設定され
-た)FWによってこのテストが失敗し、認識違いがあったことが判明した。
-
-   \subsubsection{ネットワーク機器の動作不具合}
-   \label{sec:find-nw-device-bug}
- % 原因切り分けメモ (muraki) – NetTester
- % https://3.basecamp.com/3088280/buckets/867009/documents/217782147
- % 調査: テスト環境でシナリオ実行すると2回目以降でコケる – NetTester
- % https://3.basecamp.com/3088280/buckets/867009/todos/218486066
-
-当初、静的なふるまいのテストのテストシナリオを実装し、動作させたときに、
-同一のテストシナリオが実行するたびに成功・失敗をくりかえすという事象があっ
-た。調査をすすめたところ、FWのARP処理の挙動について以下のような動作をし
-ていることがわかった。
-\begin{itemize}
- \item NetTesterが生成するテスト用ノードでは、IPアドレスは一定だが、MAC
-       アドレスはテストシナリオ実行ごとにランダムに変更する。
- \item FWにARP前のシナリオで実行したテスト用ノードのMACエントリが残って
-       いると、次のシナリオで実行した(IPは同一だがMACアドレスが異なる)ARPに
-       対して応答しない。(ARPエントリのクリアをおこなっても応答しない)
- \item FWのARPエントリをクリアして、クライアントからTCP通信をおこなって
-       もFW(Gateway)からサーバ側へのARPが確認できず、MACを学習していない
-       にもかかわらず TCP SYN が送信されることがある。
-\end{itemize}
-
-これらの事象および当初仕様していたFWのOSバージョンが古かったことから、FW
-の不具合と判断し、FWのOSを更新する\footnote{\tabref{tbl:device-list}参照。
-FWは更新版6.3.0r22.0(2016/4月リリース)に対して当初は6.3.0r5.0(2010/9月リ
-リース)を使用していた\cite{screenos-releases}。}ことで解決した。
-
-  \subsection{静的なふるまいのテスト}
-TODO: テストとして実現したかったことに対してどういうったことができたのか。
-
-  \subsection{動的なふるまいのテスト}
-TODO
-step2/step3について実際にやれたことの話をまとめる。
-\begin{itemize}
- \item 実装 (NAT IPの変更とかデモの話をどこまで含めるか?)
- \item 結果
-\end{itemize}
+これにより、要求変化への追従に対するテストファーストな対応、回帰テストに
+よる仕様変更対応の影響範囲の調査(予期しない影響が発生していないこと)を実
+際に実装し、確認することができた。
 
  \section{テストシナリオ実装における検討ポイント}
+ \label{sec:testscenario-impl-point}
 
   \subsection{Teardown処理}
   \label{sec:teardown}
@@ -465,10 +511,10 @@ teardown処理を実装し、テスト用ノードのMACアドレスはシナリ
                    報をまとめて消去してしまうため。そのシナリオに依存す
                    るエントリだけをねらって消去できるのであればこの制約
                    は外れるが、テスト対象ネットワーク内の機器それぞれに
-                   ついて対応可能かどうかという点が問題となるだろ
-                   う。}\footnote{あるいは、teardown処理を他のテストシナ
-                   リオ実行がおわるまで待機し、まとめて実行できればよい
-                   が、現状はそうした実装をおこなっていない。}。
+                   ついて対応可能かどうかという点が問題となるだろう。あ
+                   るいは、teardown処理を他のテストシナリオ実行がおわる
+                   まで待機し、まとめて実行できればよいが、現状はそうし
+                   た実装をおこなっていない。}。
              \item 動的なふるまいのテストのように、ネットワーク全体の状
                    態に影響をあたえるようなテストシナリオは同時に実行で
                    きない。
@@ -496,16 +542,17 @@ PoCの範囲外としている。本PoCでは、ひとつのテスト対象ネ�
 tester setがあり、同時にひとつのテストシナリオを実行することが前提となっ
 ている。
 
-  \subsection{テスト用サーバとステップ実行}
+  \subsection{テストダブルの考えかた}
   % ニセ○○サーバとステップ実装 – NetTester
   % https://3.basecamp.com/3088280/buckets/867009/documents/216490375
+一般的に、ソフトウェアテストにおいて、テスト対象が依存しているコンポーネ
+ントを置き換える代用品のことをテストダブル~\cite{test-double}という。
+
 本PoCのように、end-to-end のネットワークテストを行なう場合、テストトラ
-フィック生成ののためにクライアント/サーバを用意する必要がある。テスト対
-象ネットワーク内に既存のサーバがあるケースもあれば、本PoCのように実際に
-はサーバがなく、代替となるサーバをテストシナリオで準備しなければならない
-ケースもある。一般的に、ソフトウェアテストにおいて、テスト対象が依存して
-いるコンポーネントを置き換える代用品のことをテストダブ
-ル~\cite{test-double}という。
+フィック生成のためにクライアント/サーバを用意する必要がある。テスト対象
+ネットワーク内に既存のサーバがあるケースもあれば、本PoCのように実際には
+サーバがなく、代替となるサーバをテストシナリオで準備しなければならないケー
+スもある。
 
 テストダブルとしてのサーバを導入する場合、導入することによってその他のテ
 ストコードの書き換えが発生する(実際のサーバがある場合のテストコードと代
@@ -608,7 +655,7 @@ run "sudo ip netns exec #{@server.name} bash -c 'echo OK | nc -l 80 &'"
 そこで、テストデータの管理に Factory Girl~\cite{factory-girl}を使用する。
 各テストシナリオで使用するテストデータを
 \verb|features/factories.rb|\footnote{\url{https://github.com/net-tester/examples/blob/develop/features/factories.rb}}
-で管理する。verb|factories.rb|では次の情報を記述する。
+で管理する。\verb|factories.rb|では次の情報を記述する。
 \begin{description}
  \item[仮想ホスト共通属性の定義] ネットワークアドレスやゲートウェイのよ
             うに、各テスト用ノードが共有する属性を記述する。
@@ -677,7 +724,6 @@ end
 実行する際の一般的なやりかたに準拠させる必要はなく、個々のテストシナリオ
 のメンテナンス性を重視して考えることができる。
 
-
   \subsection{Sleep tuning}
 % TODO
 % step3 テストにおけるsleep調整など、課題、対応について。
@@ -719,10 +765,28 @@ end
 リオ実行を遅延させて別途テスト対象ネットワーク上での調査や作業をおこなう)よ
 うなケースでは不要なsleepチューニングが残らないようにする必要がある。
 
+  \subsection{標準出力(stdout)の操作}
+  % 今日なにした? – NetTester
+  % https://3.basecamp.com/3088280/buckets/867009/questions/181826801/answers/2016-10-21#__recording_267488304
+テストステップ実装では、テスト用ノードのコマンド実行結果(stdout)を取得し
+たいケースがある。このとき、\verb|$stdout|の操作をおこなってしまうと、
+teardown処理等で実行するexpect系ツールへ影響を与えてしまうことがある。
+
+今回、テスト対象ネットワークの操作にはexpectacle(\ref{sec:expectacle}参
+照)というツールを使用しているが、内部的には spawn されたコマンド
+(\code{telnet},\code{ssh})の標準出力を\code{pty}/\code{expect}で操作して
+いる。テストシナリオ(テストステップ)側で \verb|$stdout| などを操作してし
+まうと、こうしたプロセスに影響が及んでしまう点に注意すること。
+
+ % \section{テストシナリオのリファクタリング}
+ % TODO
+ % というかまだおわってないのでこれはいったん省くか
+
  \section{テストシナリオのデバッグ}
 
 テストシナリオの実装・実行をした際、テストが失敗したときには原因として以
-下の要因が考えられる。また、これらの原因が複合して発生することがある。
+下の要因が考えられる(\ref{sec:statictest-founded-issues}節参照)。また、
+これらの原因が複合して発生することがある。
 \begin{description}
  \item[テストシナリオ実装とテスト対象ネットワーク実装の認識違い] テスト
             実装者とテスト対象ネットワーク構築者との認識違い。
