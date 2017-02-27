@@ -45,19 +45,19 @@
 
 \begin{description}
  \item[物理スイッチ(OFS)] パッチパネルとして動作させるOpenFlowスイッチ
-            \footnote{本書あるいはNetTester関連ドキュメント中では ''物理
-            OpenFlowスイッチ'',``Physical (OpenFlow) Switch'',''PSW''な
-            どで表記される。実装上はPica8スイッチを使用していることから、
-            単に''Pica8''とすることがある。}。テスト対象ネットワークのト
-            ポロジ操作やテスト用ノードの配置などをおこなう、物理ポートを
-            複数もつスイッチである。
+            \footnote{本書あるいはNetTester関連ドキュメント中では ``物理
+            OpenFlowスイッチ'',``Physical (OpenFlow) Switch'', ``PSW''
+            などで表記される。実装上はPica8スイッチを使用していることか
+            ら、単に ``Pica8'' とすることがある。}。テスト対象ネットワー
+            クのトポロジ操作やテスト用ノードの配置などをおこなう、物理ポー
+            トを複数もつスイッチである。
  \item[ソフトウェアスイッチ(OVS)] パッチパネルとして動作させるOpenFlowス
             イッチ\footnote{本書あるいはNetTester関連ドキュメント中では、
-            ``Software (OpenFlow) Switch'',''SSW''などで表記される。ある
-            いは、実装上はOpen vSwitchを使用していることから、単に''OVS''と
-            することがある。}。仮想ノードとして作成したテスト用ノードを
-            収容し、物理スイッチを介してテスト対象ネットワークにノードを
-            配置するためのスイッチである。
+            ``Software (OpenFlow) Switch'', ``SSW'' などで表記される。あ
+            るいは、実装上はOpen vSwitchを使用していることから、単に
+            ``OVS'' とすることがある。}。仮想ノードとして作成したテスト
+            用ノードを収容し、物理スイッチを介してテスト対象ネットワーク
+            にノードを配置するためのスイッチである。
  \item[テスト用ノード] テスト対象ネットワークのふるまいを調べるために、
             テストトラフィックを生成しするためのノード。実装としては、
             Linux OS 上の仮想ノード(Linux Network Namespaceを使用したノー
@@ -69,9 +69,9 @@
  \item[NetTester Server(Linux)] NetTester を実行し、テスト用ノードをホス
             トするサーバ。Network Namespace が利用可能な Linux OS を使用
             する。
- \item[テストシナリオ] テスト対象ネットワークのふるまいをしらべるための
-            手順(シナリオ)定義。本プロジェクトではCucumberを使ってテスト
-            シナリオの記述・実装をおこなう。
+ \item[テストシナリオ] テスト対象ネットワークのふるまいを調べるための手
+            順(シナリオ)定義。本プロジェクトではCucumberを使ってテストシ
+            ナリオの記述・実装をおこなう(\ref{chap:poc-scenario-dev}章)。
 \end{description}
 
   \subsection{構成上の制限・制約}
@@ -101,14 +101,14 @@ PoC実施時点\footnote{2016年10月-12月}のNetTesterでは、
        シンと共有させない。)
        %% TODO: Tester Set の定義をどこかにいれるべき?
  \item ソフトウェアスイッチのDatapath ID (DPID)を固定している(SSW
-       DPID=\code{0xdad1c001}\footnote{''daddy cool''})。物理スイッチの
+       DPID=\code{0xdad1c001}\footnote{``daddy cool''})。物理スイッチの
        DPIDは環境変数により実行時指定が可能である
-       (\ref{sec:nettester-envvar}節参照)。
+       (\ref{sec:nettester-envvar}節)。
 \end{itemize}
 これらのモデル定義および制限の設定は、NetTester 実装をシンプルにするため
 のものである。本プロジェクトでは、NetTester それ自体の機能拡張や拡張性の
 担保ではなく、BDDベースのネットワークテスト(ユースケースの実証)を目標と
-している(\ref{sec:behavior-test}節参照)。
+している(\ref{sec:behavior-test}節)。
 
  \section{フロールール設計の方針}
  \label{sec:flow-design-policy}
@@ -143,11 +143,9 @@ NetTester が制御するテストシステムのトラフィックは大きく�
     \paragraph{テスト対象NW機器間の物理結線(トポロジ)操作}
 
 \tabref{fig:features-of-network-testing} No.3相当。テスト対象ネットワー
-クの物理構成操作のための機能。物理スイッチが持つポートをレイヤ1レベルで
-1:1に直接マッピングする方法で制御する。
-
-これは \lopjc で解説している「専有モードワイヤ」と同様であるため、本書で
-は解説しない。
+クの物理構成操作のための機能。物理スイッチが持つポートをL1レベルで1:1に
+直接マッピングする方法で制御する。これは \lopj で解説している「専有モー
+ドワイヤ」と同様であるため、本書では解説しない。
 
     \paragraph{テスト用ノードの配置}
 
@@ -162,12 +160,12 @@ NetTester上の複数のノードをパッチするために、NetTesterサー�
 での制御をおこない、ひとつの物理ポート/リンクに複数の「パッチされた配線」
 が通るようにする。
 
-\lopj ではこれを「共有モードワイヤ」としてフロー制御を実装した。\lopj
-では複数の物理OpenFlowスイッチを使用する想定でフロー制御を考慮している。
+\lopj ではこれを「共有モードワイヤ」としてフロー制御を実装した。\lopj で
+は複数の物理OpenFlowスイッチを使用する想定でフロー制御を考慮している。
 NetTesterでは、フロールール実装を簡略化するために、システム構成として物
-理スイッチを1台に限定した(\ref{sec:nettester-model}節参照)。よって、
-\lopj で検討したフロー制御をもとに、より簡略化した制御ルールとなっている。
-以降、テスト用ノード配置のためのフロールールについて解説する。
+理スイッチを1台に限定した(\ref{sec:nettester-model}節)。よって、\lopj で
+検討したフロー制御をもとに、より簡略化した制御ルールとなっている。以降、
+テスト用ノード配置のためのフロールールについて解説する。
 
   \subsection{フロー設計の方針と前提}
   \label{sec:flow-design-premise}
@@ -192,14 +190,14 @@ NetTesterでは、フロールール実装を簡略化するために、シス�
 ストトラフィックを生成する」という前提をおいている。したがって、マルチキャ
 ストトラフィックの利用(制御)は想定していない。また、今回のPoC範囲におい
 て、IPv6のテストトラフィックを含むユースケースについては想定していない。
-制御ルール自体はレイヤ2となるため、UnicastについてはIPv4/v6による影響は
-原理的にはないが、テスト用ノードでのIPv6 ND/RAなどの利用は考慮していない。
+制御ルール自体はL2となるため、UnicastについてはIPv4/v6による影響は原理的
+にはないが、テスト用ノードでのIPv6 ND/RAなどの利用は考慮していない。
 
     \paragraph{フローテーブル設計}
     % Table & Rule Priority Design (2015 ool-l1patch) – NetTester
     % https://3.basecamp.com/3088280/buckets/867009/documents/211290387
 
-\lopjc 同様、OpenFlow/1.0 を利用するため、すべてのOpenFlowスイッチはひと
+\lopj 同様、OpenFlow/1.0 を利用するため、すべてのOpenFlowスイッチはひと
 つのフローテーブルをもつ(Single Table)。複数フローテーブルによるフロー処
 理の分割\footnote{Multiple Table: OpenFlow/1.3以降で対応。}は考慮せず、
 あるフローが複数のフロールールにマッチする可能性がある場合はフロールール
@@ -209,7 +207,7 @@ NetTesterでは、フロールール実装を簡略化するために、シス�
  \label{sec:flow-design}
  % https://drive.google.com/file/d/0B2eRR_JxYJA5TmhaeWItNF93Um8/view
 
-\lopjc ではテスト用ノード配置のためのフロールール設計を、複数の物理
+\lopj ではテスト用ノード配置のためのフロールール設計を、複数の物理
 OpenFlowスイッチを使用する想定で設計していた。本プロジェクトでは、
 \figref{fig:model-nettester}のように簡略化して物理OpenFlowスイッチを1台
 とした。これによって、テスト用ノードをテスト対象のどこに(物理スイッチの
@@ -253,8 +251,8 @@ Request/Reply のやりとりがおこなわれる。ここで、ARP Request は
 テスト用ノードを増やしていったときに、テスト対象ネットワークにある機器側
 で接続先物理ポートが都度必要になってしまうと、拡張性を制限する原因となっ
 てしまう。テストシステムでは、自由に・多数のテスト用ノードを生成し、かつ、
-物理ポートの利用を抑えるようにしたい。そのために、テスト用ノードではVLAN
-による複数セグメントの集約を利用できるようにする
+物理ポートの利用を抑えられるようにしたい。そのために、テスト用ノードでは
+VLANによる複数セグメントの集約を利用できるようにする
 (\figref{fig:l2bcctrl_req2})。
 
 \begin{figure}[h]
@@ -264,8 +262,7 @@ Request/Reply のやりとりがおこなわれる。ここで、ARP Request は
  \label{fig:l2bcctrl_req2}
 \end{figure}
 
-VLAN の制御については後述するが、
-% TODO: ref
+VLAN の制御については\ref{sec:vlan-ctrl}節で解説するが、
 \figref{fig:l2bcctrl_req2}のようにした場合、テスト対象機器(DUT)の同一物
 理ポートに接続したテスト用ノード(ノード1/2, 3/4)の間では相互に通信ができ
 ないという制約が発生する。これは、フラッディング動作による。たとえばノー
@@ -292,9 +289,9 @@ VLAN の制御については後述するが、
 ド1-4へ転送されなければならない。
 
 システム構成上、物理スイッチとソフトウェアスイッチの間はひとつの物理リン
-クのみとする(\ref{sec:nettester-model-restriction}節参照)。OpenFlowでは、
-同一のポートにパケットの複製して複数ながすことはできないため、ソフトウェ
-アスイッチで各テストノードむけにパケットを複製して送信する必要がある。
+クのみとする(\ref{sec:nettester-model-restriction}節)。OpenFlowでは、同
+一のポートにパケットの複製して複数ながすことはできないため、ソフトウェア
+スイッチで各テストノードむけにパケットを複製して送信する必要がある。
 
 \begin{figure}[h]
  \centering
@@ -305,11 +302,11 @@ VLAN の制御については後述するが、
 
 「パッチパネル」では、接続された2点(2ポート)間が1:1に接続される。
 \figref{fig:l2bcctrl_req4}ではポート(a)(b)から送信されたSeg.1内のブロー
-ドキャストが2フレームソフトウェアスイッチに転送されるが、「パッチパネル」
-としてはこれを同じものとして扱うのは望ましくない。パッチ接続の対応関係に
-基づいて、ポート(a)から送信されたブロードキャストフレームはノード1-3へ、
-ポート(b)から送信されたブロードキャストフレームはノード4へと、それぞれ転
-送されるのが「パッチパネル」としての理想的な動作となる。
+ドキャストがふたつソフトウェアスイッチに転送されるが、「パッチパネル」と
+してはこれを同じものとして扱うのは望ましくない。パッチ接続の対応関係に基
+づいて、ポート(a)から送信されたブロードキャストフレームはノード1-3へ、ポー
+ト(b)から送信されたブロードキャストフレームはノード4へと、それぞれ転送さ
+れるのが「パッチパネル」としての理想的な動作となる。
 
   \subsection{Broadcast制御 案1/簡易制御}
   \label{sec:l2bcctrl-plan1}
@@ -367,11 +364,11 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
   \subsection{Broadcast制御案の比較と選択}
   \label{sec:l2bcctrl-compare}
 
-案1(\ref{sec:l2bcctrl-plan1}節)・案2(\ref{sec:l2bcctrl-plan2}節)のメリッ
-ト・デメリットをまとめてみると\tabref{tab:l2bcctrl_compare}のようになる。
-本プロジェクトでは、その目的(\ref{sec:behavior-test}節)からツールとして
-の機能・拡張性よりもユースケース実証に重きをおく。そのため、構成のシンプ
-ルさにみあった制御ルールのシンプルさが得られる案1を採用した。
+案1・案2のメリット・デメリットをまとめてみると
+\tabref{tab:l2bcctrl_compare}のようになる。本プロジェクトでは、その目的
+(\ref{sec:behavior-test}節)からツールとしての機能・拡張性よりもユースケー
+ス実証に重きをおく。そのため、構成のシンプルさにみあった制御ルールのシン
+プルさが得られる案1を採用した。
 
 \begin{table}[h]
  \caption{L2 Broadcast 制御案 比較}
@@ -485,9 +482,9 @@ sw1/Seg.1内の折り返し通信をおこなうため、ノード4をポート(
  \label{fig:vlan-req}
 \end{figure}
 
-VLAN Tagをどこでテスト用ノードで制御することも可能だが、\lopjc では以下
-の理由からOpenFlow スイッチ(物理スイッチおよびソフトウェアスイッチ)で
-VLAN Tagの制御をおこなっていた。NetTesterの実装もこれに従っている。
+VLAN Tagをどこでテスト用ノードで制御することも可能だが、\lopj では以下の
+理由からOpenFlow スイッチ(物理スイッチおよびソフトウェアスイッチ)でVLAN
+Tagの制御をおこなっていた。NetTesterの実装もこれに従っている。
 \begin{itemize}
  \item テスト用ノードとしてVLAN Tagを利用できないノードも想定する。
  \item Wire-group(\ref{sec:l2bcctrl-plan2}節)をつかった制御では、
@@ -565,13 +562,12 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
   % https://docs.google.com/spreadsheets/d/1cipE5Q_1N5vpRaepBgQR2s03dcJBeBpG-XUsHTEzf8A/edit#gid=1208238463
 
 \ref{sec:vlan-ctrl-req}節-\ref{sec:vlan-ctrl-testee2tester-broadcast}節
-で示したように、ブロードキャスト制御案1(\ref{sec:l2bcctrl-plan1}参照)の
-元では、VLAN tagの制御は物理スイッチ/ソフトウェアスイッチのどちらでも実
-装が可能である。
-\tabref{tab:vlan-ctrl-by-ssw}にソフトウェアスイッチ(SSW)でVLAN Tag操作す
-る場合のフロールールを、\tabref{tab:vlan-ctrl-by-psw}に物理スイッチ(PSW)
-でVLAN Tag操作する場合のフロールールを示す。NetTester では、以下の理由か
-ら SSW による VLAN Tag 操作を採用している。
+で示したように、ブロードキャスト制御案1(\ref{sec:l2bcctrl-plan1}節)の元
+では、VLAN tagの制御は物理スイッチ/ソフトウェアスイッチのどちらでも実装
+が可能である。\tabref{tab:vlan-ctrl-by-ssw}にソフトウェアスイッチ(SSW)で
+VLAN Tag操作する場合のフロールールを、\tabref{tab:vlan-ctrl-by-psw}に物
+理スイッチ(PSW)でVLAN Tag操作する場合のフロールールを示す。NetTester で
+は、以下の理由から SSW による VLAN Tag 操作を採用している。
 \begin{itemize}
  \item 物理スイッチはスイッチOSやハードウェア(ネットワークチップ)などに
        より、製品ごとに機能差があることがある。今回はOpenFlowでも最も基
@@ -725,14 +721,14 @@ VLAN Tagがある場合・ない場合でブロードキャストのルールを
   \begin{tablenotes}
    \footnotesize
    \item[1] \tabref{tab:vlan-ctrl-by-ssw} No.
-   \item[2] 「専有モードワイヤ」(\ref{sec:flow-design-grouping})
+   \item[2] 「専有モードワイヤ」(\ref{sec:flow-design-grouping}節)
   \end{tablenotes}
  \end{threeparttable}
 \end{table}
 
 OpenFlow/1.0では、テーブルミス\footnote{フローテーブル内のどのフロールー
 ルにもマッチしない場合。}のとき、デフォルトでコントローラに送信
-\footnote{\code{actions=CONTROLLER} = OFCへのPacket-in送信}される。この
+\footnote{\code{actions=CONTROLLER} : OFCへのPacket-in送信}される。この
 動作はこのあとの OpenFlow バージョンでは変更されているので、NetTester
 OFCでは動作を統一させるために明示的に指定する。当初、デバッグ用途もあり
 \code{actions=CONTROLLER}としていたが、Trema のパケットパーサ(Trema/Pio)
@@ -755,9 +751,9 @@ OFCでは動作を統一させるために明示的に指定する。当初、�
 \tabref{fig:features-of-network-testing} No.3では物理リンク(物理トポロジ)操
 作をあげた。これは、複数のポートをつなぎあわせて(「パッチ」して)テスト対
 象ネットワークの物理トポロジを構成するという観点だけでなく、テスト中に発
-生する物理リンク操作という観点も含まれる(\ref{sec:behavior-to-test}節
-「動的なふるまい」参照)。ここでは「動的なふるまい」のテストのための物理
-リンク操作方法について解説する。
+生する物理リンク操作という観点も含まれる(\ref{sec:behavior-to-test}節)。
+ここでは「動的なふるまい」のテストのための物理リンク操作方法について解説
+する。
 
 テスト対象ネットワークでは\figref{fig:patch-layer1}のように、物理
 OpenFlowスイッチを仲介させることで物理トポロジ操作を可能にする。このとき、
@@ -781,10 +777,10 @@ OpenFlowスイッチを仲介させることで物理トポロジ操作を可能
  \label{fig:patch-layer1}
 \end{figure}
 
-本プロジェクトでは、PoCとして、最も基礎となる「動的なふるまい」とそのテ
-ストをターゲットとし、リンク障害試験をそのユースケースとしてとりあげた。
-リンク障害は通常、テスト対象ネットワーク内(該当するリンクをもつネットワー
-ク機器)でポートのup/downを検出するため、直接リンクダウン方式を採用する。
+本プロジェクトでは、最も基礎となる「動的なふるまい」とそのテストをターゲッ
+トとし、リンク障害試験をそのユースケースとしてとりあげた。リンク障害は通
+常、テスト対象ネットワーク内(該当するリンクをもつネットワーク機器)でポー
+トのup/downを検出するため、直接リンクダウン方式を採用する。
 
 直接リンクダウンの実装としては、以下の2つの方法がある。
 \begin{itemize}

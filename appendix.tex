@@ -9,19 +9,19 @@
  % GitHub - stereocat/expectacle
  % \url{https://github.com/stereocat/expectacle/tree/develop}
 
-テストシナリオ実装の際、テスト対象機器へのコマンド発行(teardown処理)をお
-こなうためにExpectacle~\cite{expectacle}というツールを使用している。
-Expectacle はあらかじめ作成したコマンド(列)を指定した機器情報に基づいて
-順に送信する単純なツールである。詳細な使用方法についてはExpectacle
-README にあるためここでは扱わない。本PoCで利用した際の注意事項について解
-説する。
+テストシナリオ実装の際、テスト対象機器へのコマンド発行(teardown処理;
+\ref{sec:teardown}節)をおこなうためにExpectacle~\cite{expectacle}という
+ツールを使用している。Expectacle はあらかじめ作成したコマンド(列)を指定
+した機器情報に基づいて順に送信する単純なツールである。詳細な使用方法につ
+いてはExpectacle README にあるためここでは扱わない。本PoCで利用した際の
+注意事項について解説する。
 
 Expectacle が使用する操作対象機器情報・コマンド列ではERBを使った変数の展
 開ができる。本PoCでは、操作対象情報のうちそのまま設定ファイルに記入して
 リポジトリへ登録してはいけない秘密情報(ログインユーザ名・パスワード)を設
 定するために環境変数展開を使用した。例として、L2/L3スイッチの操作に関し
 ての操作対象情報は
-\lstref{lst:l2sw1-login}\footnote{\url{https://github.com/net-tester/examples/blob/develop/features/support/expectacle/hosts/c3750g_hosts.yml}}
+\lstref{lst:l2sw1-login}\footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/support/expectacle/hosts/c3750g_hosts.yml}}
 のようになる。
 \begin{lstlisting}[caption=L2スイッチ(L2SW1)ログイン情報,label=lst:l2sw1-login]
 - :hostname : 'l2sw1'
@@ -67,9 +67,9 @@ Expectacleの機能は\tabref{tab:test-functions}の No.1 (NW機器の設定・�
 当初、NetTester OFCのテーブルミスアクションを\code{CONTROLLER}として
 packet-inを発生させるようにしていた。このとき、特定パケット(フレーム)の
 packet-inに対して OFC (Trema) がエラーで停止しまうという問題が発生した
-(\ref{sec:flow-priority-design}節参照)。この問題にあたって、Trema開発チー
-ムの協力により、Tremaの内部ログを取得するための、\code{Trema.logger} API
-が追加されている~\cite{trema-logger-doc}。
+(\ref{sec:flow-priority-design}節)。この問題にあたって、Trema開発チーム
+の協力により、Tremaの内部ログを取得するための、\code{Trema.logger} APIが
+追加されている~\cite{trema-logger-doc}。
 
 \code{Trema.logger}の使用方法は一般的なロガーと同様であり、Trema内部にロ
 グメッセージを挿入していくことで、Tremaの内部情報のログを取得することが
@@ -178,7 +178,7 @@ IOError: data truncated
 \begin{itemize}
  \item OpenFlow ヘッダの全体の長さ (\verb|message_length| = 146) は正しい。
  \item 一方で \verb|PacketIn| の \verb|total_len| (PacketIn データの長さ)が
-       \footnote{原因詳細まで調査していない。} 471 となっている。
+       471 となっている\footnote{原因詳細まで調査していない。} 。
  \item Pio はデータの長さを \verb|total_len| から取得するので、471 バイ
        ト読もうとして失敗している。
 \end{itemize}
@@ -231,10 +231,10 @@ Sending #<Pio::OpenFlow10::Echo::Reply:0x000000011ef338 @format={:version=>1, :t
 \section{Phut Basics}
 \label{sec:phut_basics}
 
-ここでは、NetTesterの内部実装およびNetTester自身のテストコードで使用され
-ているコードを元に、仮想ノード/仮想ネットワーク操作の処理実装の基礎につ
-いて解説する。NetTester内部では、Phut~\cite{phut}を使用してLinuxの仮想ネッ
-トワーク機能を操作している。なお、記載内容は 2016年9月時点のものである。
+NetTesterの内部実装およびNetTester自身のテストコードで使用されているコー
+ドを元に、仮想ノード/仮想ネットワーク操作の処理実装の基礎について解説す
+る。NetTester内部では、Phut~\cite{phut}を使用してLinuxの仮想ネットワーク
+機能を操作している。なお、記載内容は 2016年9月時点のものである。
 
 \subsection{Phutによる仮想ノード/仮想ネットワーク操作の概要}
 
