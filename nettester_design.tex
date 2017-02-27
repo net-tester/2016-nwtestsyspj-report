@@ -77,7 +77,7 @@
   \subsection{構成上の制限・制約}
   \label{sec:nettester-model-restriction}
 
-PoC実施時点\footnote{2016年10月-12月}のNetTesterでは、
+PoC実施時点\footnote{2016年10月--12月}のNetTesterでは、
 \figref{fig:model-nettester}のようにモデルを定義した。このモデル定義では、
 以下のようなテストシステム構成上の制限や制約がある。
 \begin{itemize}
@@ -96,9 +96,9 @@ PoC実施時点\footnote{2016年10月-12月}のNetTesterでは、
        とし、物理スイッチ側のポート番号をPort 1とする。
        %% TODO: 詳細は後述 → フロー設計あたりか?
        また、このリンクはNetTesterを実行するOSで専有して使用する。
-       (NetTester Server を仮想マシンとして実行する場合、物理スイッチ-ソ
-       フトウェアスイッチ間を接続するための物理リンク/ポートを他の仮想マ
-       シンと共有させない。)
+       (NetTester Server を仮想マシンとして実行する場合、物理スイッチ--
+       ソフトウェアスイッチ間を接続するための物理リンク/ポートを他の仮想
+       マシンと共有させない。)
        %% TODO: Tester Set の定義をどこかにいれるべき?
  \item ソフトウェアスイッチのDatapath ID (DPID)を固定している(SSW
        DPID=\code{0xdad1c001}\footnote{``daddy cool''})。物理スイッチの
@@ -211,8 +211,8 @@ NetTesterでは、フロールール実装を簡略化するために、シス�
 OpenFlowスイッチを使用する想定で設計していた。本プロジェクトでは、
 \figref{fig:model-nettester}のように簡略化して物理OpenFlowスイッチを1台
 とした。これによって、テスト用ノードをテスト対象のどこに(物理スイッチの
-どのポートに)配置したいかが決まれば、物理スイッチ-ソフトウェアスイッチ間
-の中間経路が一意に定まる。
+どのポートに)配置したいかが決まれば、物理スイッチ--ソフトウェアスイッチ
+間の中間経路が一意に定まる。
 
     \paragraph{ユニキャストの制御}
 
@@ -264,10 +264,10 @@ VLANによる複数セグメントの集約を利用できるようにする
 
 VLAN の制御については\ref{sec:vlan-ctrl}節で解説するが、
 \figref{fig:l2bcctrl_req2}のようにした場合、テスト対象機器(DUT)の同一物
-理ポートに接続したテスト用ノード(ノード1/2, 3/4)の間では相互に通信ができ
-ないという制約が発生する。これは、フラッディング動作による。たとえばノー
-ド1が送信したブロードキャストはノード2にはフラッディングされない。したがっ
-て、ノード1/2は相互にARPをやりとりすることができない。
+理ポートに接続したテスト用ノード(ノード1,2とノード3,4)の間では相互に通信
+ができないという制約が発生する。これは、フラッディング動作による。たとえ
+ばノード1が送信したブロードキャストはノード2にはフラッディングされない。
+したがって、ノード1,2は相互にARPをやりとりすることができない。
 
 この問題を解決するためには、同一機器(DUT)・同一セグメントでの通信をおこ
 ないたい場合は\figref{fig:l2bcctrl_req3}のような構成をとる。詳細について
@@ -286,7 +286,7 @@ VLAN の制御については\ref{sec:vlan-ctrl}節で解説するが、
 える(\figref{fig:l2bcctrl_req4})。このとき、Seg.1で発信されたブロードキャ
 ストは、ポート(a)とポート(b)からそれぞれ出力される。このふたつのブロード
 キャスト(フレーム)は物理スイッチからソフトウェアスイッチへ転送され、ノー
-ド1-4へ転送されなければならない。
+ド1--4へ転送されなければならない。
 
 システム構成上、物理スイッチとソフトウェアスイッチの間はひとつの物理リン
 クのみとする(\ref{sec:nettester-model-restriction}節)。OpenFlowでは、同
@@ -304,9 +304,9 @@ VLAN の制御については\ref{sec:vlan-ctrl}節で解説するが、
 \figref{fig:l2bcctrl_req4}ではポート(a)(b)から送信されたSeg.1内のブロー
 ドキャストがふたつソフトウェアスイッチに転送されるが、「パッチパネル」と
 してはこれを同じものとして扱うのは望ましくない。パッチ接続の対応関係に基
-づいて、ポート(a)から送信されたブロードキャストフレームはノード1-3へ、ポー
-ト(b)から送信されたブロードキャストフレームはノード4へと、それぞれ転送さ
-れるのが「パッチパネル」としての理想的な動作となる。
+づいて、ポート(a)から送信されたブロードキャストフレームはノード1--3へ、
+ポート(b)から送信されたブロードキャストフレームはノード4へと、それぞれ転
+送されるのが「パッチパネル」としての理想的な動作となる。
 
   \subsection{Broadcast制御 案1/簡易制御}
   \label{sec:l2bcctrl-plan1}
@@ -318,7 +318,7 @@ VLAN の制御については\ref{sec:vlan-ctrl}節で解説するが、
 案1/簡易制御では、\figref{fig:l2bcctrl_req4}と同様の状況で、ポート(a)(b)
 から送信されるブロードキャストフレーム(a)(b)を区別しない。これらはいずれ
 も Seg.1 内にブロードキャストであり、どちらも同様に Seg.1 に属するノード
-(ノード1-4)へ複製・転送する(\figref{fig:l2bcctrl_plan1_design})。
+(ノード1--4)へ複製・転送する(\figref{fig:l2bcctrl_plan1_design})。
 
 \begin{figure}[h]
  \centering
@@ -472,7 +472,7 @@ Wire-group には VLAN Tag を使用している。テスト対象ネットワ�
 例として、4台のテスト用ノードがテスト対象ネットワークの2つのセグメントに
 パッチ接続されている状況を想定する(\figref{fig:vlan-req})。このとき、ポー
 ト(a)は vlan tagged port (trunk port)、ポート(b)は untagged port (access
-port) である。ノード1-2はSeg.1、ノード3はSeg.2に所属している。また、
+port) である。ノード1,2はSeg.1、ノード3はSeg.2に所属している。また、
 sw1/Seg.1内の折り返し通信をおこなうため、ノード4をポート(b)に配置する。
 
 \begin{figure}[h]
@@ -561,7 +561,7 @@ Tester(テスト用ノード)に向かうブロードキャストは、宛先(De
   % NetTester-build-simple-broadcast-control
   % https://docs.google.com/spreadsheets/d/1cipE5Q_1N5vpRaepBgQR2s03dcJBeBpG-XUsHTEzf8A/edit#gid=1208238463
 
-\ref{sec:vlan-ctrl-req}節-\ref{sec:vlan-ctrl-testee2tester-broadcast}節
+\ref{sec:vlan-ctrl-req}節--\ref{sec:vlan-ctrl-testee2tester-broadcast}節
 で示したように、ブロードキャスト制御案1(\ref{sec:l2bcctrl-plan1}節)の元
 では、VLAN tagの制御は物理スイッチ/ソフトウェアスイッチのどちらでも実装
 が可能である。\tabref{tab:vlan-ctrl-by-ssw}にソフトウェアスイッチ(SSW)で
@@ -790,8 +790,9 @@ OpenFlowスイッチを仲介させることで物理トポロジ操作を可能
 \end{itemize}
 今回、NetTester では、物理OpenFlowスイッチにExpectベースのツール
 (\ref{sec:expectacle}節)でログイン/コマンド実行し、直接スイッチ上でポー
-ト状態変更する方法をとった。これは、PoC実施時点\footnote{2016年10月-12月}の
-TremaではまだPortModメッセージの送信が実装されていなかったためである。
+ト状態変更する方法をとった。これは、PoC実施時点\footnote{2016年10月--12
+月}のTremaではまだPortModメッセージの送信が実装されていなかったためであ
+る。
 
 %% TODO/あと、以下のはなしどうする?
 

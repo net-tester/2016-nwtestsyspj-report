@@ -439,7 +439,7 @@ CI/CDといったプロセスを実現する上で、複数・任意のテスト
 
 NetTesterでは、Network namespace でテスト用ノードを生成する。このときバッ
 クエンドでは iproute2(\code{ip}コマンド)を使用している。iproute2 によっ
-て生成されたホスト(netns)では、\verb|/etc/netns/<netns>/| が etc ディレ
+て生成されたノード(netns)では、\verb|/etc/netns/<netns>/| が etc ディレ
 クトリとしてマウントされる~\cite{iproute2-doc}。そのため、テスト用ノード
 内部での名前解決などでは、実体としては \verb|/etc/netns/<netns>/hosts|,
 \verb|resolv.conf| を参照する。これらの設定ファイル等が正しく設定されて
@@ -657,7 +657,7 @@ run "sudo ip netns exec #{@server.name} bash -c 'echo OK | nc -l 80 &'"
 \verb|features/factories.rb|\footnote{\url{https://github.com/net-tester/examples/blob/develop/features/factories.rb}}
 で管理する。\verb|factories.rb|では次の情報を記述する。
 \begin{description}
- \item[仮想ホスト共通属性の定義] ネットワークアドレスやゲートウェイのよ
+ \item[仮想ノード共通属性の定義] ネットワークアドレスやゲートウェイのよ
             うに、各テスト用ノードが共有する属性を記述する。
 \begin{lstlisting}
 FactoryGirl.define do
@@ -670,8 +670,8 @@ FactoryGirl.define do
  ...
 end
 \end{lstlisting}
- \item[仮想ホストの定義] すでに定義した \verb|:internal_network_host| 使っ
-            て仮想ホストを生成する。
+ \item[仮想ノードの定義] すでに定義した \verb|:internal_network_host| 使っ
+            て仮想ノードを生成する。
 \begin{lstlisting}
 FactoryGirl.define do
   ...
