@@ -85,3 +85,22 @@ and edit `.emacs.el` (see: [うぶつん: SyncTeXの設定。 Emacs\(YaTeX\) \+ 
 Jump!
 - forward search (from emacs to evince) : `C-c e` (`M-x evince-forward-search`)
 - inverse search (from evince to emacs) : Control + Left-click
+
+## Check document (Japanese text)
+
+### install RedPen
+
+Install JRE.
+```
+sudo apt install default-jre
+```
+
+Download `redpen-1.7.6.tar.gz` from
+[redpen github](https://github.com/redpen-cc/redpen/releases/) and
+install it.
+```
+tar xvzf redpen-1.7.6.tar.gz
+mv redpen-1.7.6/ redpen
+mv redpen /usr/local
+```
+Add `/usr/local/redpen/bin` to `PATH` if necessary.
