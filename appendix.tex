@@ -97,7 +97,7 @@ trema -v run <controller>.rb
   \subsection{Packet-in Binary Analysis}
   \label{sec:trema-packet-in-analysis}
 
-\label{sec:trema-logger}節の事例(特定packet-inによるOFCの停止)については、
+\ref{sec:trema-logger}節の事例(特定packet-inによるOFCの停止)については、
 実際にpacket-inするバイナリを解析し、原因がTrema/Pio~\cite{pio}パケット
 パーサのバグであることを突き止めた。ここではその際のデバッグ方法を記載す
 る。
@@ -109,9 +109,8 @@ Tremaがどのようなタイミング・原因で停止するのかを調査す
 ングで、OFCの停止がおきるという仮説をたてた。
 
     \paragraph{\code{Trema.logger}によるpacket-inのダンプ}
-Tremaの内部状態を取得するために、
-\code{Trema.logger}(\label{sec:trema-logger}節)を追加して、コントローラ
-停止時に処理していたpacket-inのダンプを取得する
+Tremaの内部状態を取得するために、\code{Trema.logger}を追加して、コントロー
+ラ停止時に処理していたpacket-inのダンプを取得する
 (\lstref{lst:packet-in-dump})。
 \begin{lstlisting}[language=,caption=問題となるPacket-inの取得,label=lst:packet-in-dump]
 diff --git a/lib/trema/switch.rb b/lib/trema/switch.rb
