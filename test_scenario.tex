@@ -219,8 +219,8 @@ listenとクライアントからの接続(tcpセッション確立/単純なサ
 確認)を使用している。L7レベルのend-to-endテスト実装としては以下のシナリ
 オがある。
 \begin{itemize}
- \item インターネットへのSSLアクセス(openssl, curlを使用したテストシナリ
-       オ実装
+ \item インターネットへのSSLアクセス(openssl/WEBrick, curlを使用したテス
+       トシナリオ実装
        \footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/step_definitions/google_steps.rb}})
  \item SSHサーバヘのアクセス(opensshを使用したテストシナリオ実装
        \footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/step_definitions/ssh_steps.rb}})
@@ -257,7 +257,7 @@ listenとクライアントからの接続(tcpセッション確立/単純なサ
 移中に発生するトラフィックの継続可否、影響度・影響範囲(場所的な範囲や時
 間)である。例を以下にあげる。
 \begin{itemize}
- \item トラフィックの継続可否
+ \item セッション/コネクションの継続可否
        \begin{itemize}
         \item ロードバランサなどL7情報にしたがってトラフィックを操作する
               機器では、系切替の際、セッション情報を引きついで通信を維持
@@ -267,7 +267,7 @@ listenとクライアントからの接続(tcpセッション確立/単純なサ
         \item 系切替には隣接する機器も関連する。例えば、対象とする冗長系
               のL1/L2切替に Gratuitous ARP を使用する機器がある。隣接す
               るL2スイッチのバグによって Gratuitous ARP 処理が正しくおこ
-              なわれず、トラフィックの継続に失敗した事例がある。
+              なわれず、コネクションの継続に失敗した事例がある。
        \end{itemize}
  \item 影響度・影響範囲
        \begin{itemize}
@@ -353,7 +353,7 @@ Ping(ICMP)を一定間隔で送受信しておき、通信断等の影響がど�
 \footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/support/echo_server.pl}}
 して使用している。
 
-リンク障害発生時のトラフィック影響としては、単純に CIMP/TCP ping ログに
+リンク障害発生時のトラフィック影響としては、単純に ICMP/TCP ping ログに
 おいてパケットが受信できなかった部分の時間差分を計算する
 \footnote{\url{https://github.com/net-tester/examples/blob/feature/ood_demo/features/step_definitions/util.rb},
 \code{check\_connection}参照。}ことでおこなっている。
@@ -700,8 +700,8 @@ end
 \end{description}
 
 Factory Girl で定義されたテストデータを使用してテスト用ノードを生成する
-と次のようになる。このように、テスト用ノードの共通パラメタを分離し、パラ
-メタの設定や管理を効率的に実装できる。
+と次のようになる。このように、テスト用ノードの共通パラメタを分離し、本質
+的でないパラメタの隠蔽することができる。
 \begin{lstlisting}
 Given(/^NTP クライアントとなる開発者 PC$/) do
   @ntp_client = Netns.new(attributes_for(:ntp_client))
@@ -786,7 +786,7 @@ teardown処理等で実行するexpect系ツールへ影響を与えてしまう
 
 今回、テスト対象ネットワークの操作にはexpectacle(\ref{sec:expectacle}節)
 を使用しているが、内部的には \code{spawn} されたコマンド
-d(\code{telnet},\code{ssh})の標準出力を\code{pty}/\code{expect}で操作して
+(\code{telnet},\code{ssh})の標準出力を\code{pty}/\code{expect}で操作して
 いる。テストシナリオ(テストステップ)側で \verb|$stdout| などを操作してし
 まうと、こうしたプロセスに影響が及んでしまう点に注意すること。
 
@@ -828,12 +828,15 @@ d(\code{telnet},\code{ssh})の標準出力を\code{pty}/\code{expect}で操作�
               クに届いているかどうかを、ARP/MACアドレステーブルで確認す
               る。テスター側のVLAN設定とテスト対象ネットワーク機器側のポー
               トVLAN設定とのミスマッチに注意すること。
-        \item テスト用ノード接続ポートのパケットカウンタ(エラーカウンタ
-              の確認)
+        \item テスト用ノード接続ポートのパケットカウンタ(エラーカウンタ)
+              を確認する。
+        \item ステートフルファイアウォールでは、policy別のセッション状況
+              を確認する。\footnote{Juniper SSG の場合は\code{get log
+              traffic}コマンドで確認できる。}
         \item テスト対象ネットワーク機器でテスト用ノードが生成したトラ
               フィックが送受信できていない場合はパケットキャプチャしてヘッ
               ダ等の情報を確認する。(NetTesterの場合、L2(MAC, VLAN Tag)
-              の操作をおこなうので注意。)
+              操作する点に注意。)
        \end{itemize}
  \item テスター側OVSでの操作
        \begin{itemize}
@@ -852,7 +855,11 @@ ovs-ofctl dump-ports <bridge> <port-number>
 \begin{lstlisting}
 ovs-ofctl dump-ports <bridge>
 \end{lstlisting}
-        \item OFS-OFC間通信(セキュアチャネル)状態
+        \item OFS-OFC間通信(セキュアチャネル)状態および送受信される
+              OpenFlow Messageの確認
+\begin{lstlisting}
+ovs-vsctl snoop <bridge>
+\end{lstlisting}
        \end{itemize}
  \item テスター(NetTester)サーバでの操作
        \begin{itemize}
@@ -1034,6 +1041,33 @@ rubyスクリプトが作成できるレベル。本PoCのシナリオでは、�
             シナリオが実装できて動作確認がとれると、あとは基本シナリオの
             応用となって1シナリオ0.5--1.0人日程度で実装できた。
 \end{description}
+
+  \subsection{テストスイートの機能を使った高度なネットワークテスト}
+
+    \paragraph{タグによるフィルタリング}
+PoCではテストシナリオを実装するためにCucumberを使用している。こうしたテ
+ストスイートは通常、指定したルールでテストシナリオを実行する機能を持って
+いる。Cucumberの場合はタグを使用したテストシナリオの実行が可能である。
+
+    \paragraph{回帰テスト}
+Cucumberのデフォルトでは feature ファイルのファイル名順にテストを実行し
+ていく。本PoCでこのルールにそって回帰テストをすると、静的なふるまいのテ
+ストと動的なふるまいのテストの順序が混在して実行される。実行の様子につい
+てはスクリーンキャスト~\cite{nettester-asciinema-full}を参照すること。回
+帰テストでは50以上のテストシナリオ(通信試験・リンク障害試験混在)が20分強
+で実行できた。
+
+    \paragraph{高度なテストへの発展}
+従来の手作業によるテストでは、システム変更が発生するたびに数時間から場合
+によっては数日かけて既存システムへの影響調査が実施されていた。回帰テスト
+によって、検証環境での全テストが数十分に短縮できれば、運用や構成変更のリー
+ドタイムを短縮できる。また、手作業では通常、通信試験と障害試験は別個に・
+一定の順序でおこなわれる。既存のテストスイートの機能を使用することで、実
+行するテストのフィルタリングや順序のシャッフルなどが容易にできるようにな
+る。テストをランダムに実行させることで、順序や状態変化(シーケンス)依存性
+がある挙動・問題点のあぶりだしが可能になる。こうしたテスト実行は手作業で
+はできなかったテストであり、ネットワークに対するテスト範囲をより拡張させ
+るものである。
 
 %%% Local Variables:
 %%% mode: yatex

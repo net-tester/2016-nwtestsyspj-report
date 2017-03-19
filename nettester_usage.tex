@@ -342,7 +342,8 @@ bundle install --binstubs --path=vendor/bundle
  \centering
  \caption{PoCテストシナリオ内で使用するツール}
  \label{tab:tools-for-scenario}
- \begin{tabular}{l|l|l}
+ \begin{threeparttable}
+  \begin{tabular}{l|l|l}
   \hline
   Tool(package) & Version & テストシナリオ内での使いかた \\
   \hline
@@ -351,9 +352,14 @@ bundle install --binstubs --path=vendor/bundle
   dnsmasq & 2.75 & DNS通信テスト用の軽量DNSサーバとして使用 \\
   curl & 7.47.0 & HTTP(HTTPS)アクセス用クライアントとして使用 \\
   openssl & 1.0.2g & HTTPSサーバで使用 \\
-  openssh & 7.2p2 & SSHサーバ/クライアントで使用 \\
+  openssh & 7.2p2 & SSHサーバ/クライアントで使用\tnote{1} \\
   \hline
- \end{tabular}
+  \end{tabular}
+  \begin{tablenotes}
+   \footnotesize
+   \item PR\#58~\cite{examples-pr58}以降ではWEBrickを使用。
+  \end{tablenotes}
+ \end{threeparttable}
 \end{table}
 
   \subsection{NetTesterのインストール}

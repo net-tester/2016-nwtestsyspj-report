@@ -281,7 +281,9 @@ Phutの内部処理で、Phutが識別するインタフェース名をもとに
 (\figref{fig:vlink-model2})。OS上(NetTester外)からPhutで生成したインスタ
 ンスを操作する場合は、実際のデバイス名を使用する必要がある。また、デバイ
 ス名として使用できる文字列には上限があるため、名前(文字列)の長さに注意す
-る必要がある。
+る。\footnote{vHost/Netns の \code{:name} attribute は12文字まで。OS上で
+はこれに\code{L1\_}を付与してた15文字が最大長とな
+る~\cite{netns-name-max-length}。}
 
 \begin{figure}[h]
  \centering
