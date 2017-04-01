@@ -1,0 +1,287 @@
+%% -*- coding: utf-8-unix -*-
+
+\chapter{テストシナリオ実装時のトラブルとワークアラウンド}
+ネットワークのテストという観点で実際に発見できた問題点については
+\ref{sec:statictest-founded-issues}節でとりあげている。本章では、テスト
+シナリオ実装の際におきた問題点やワークアラウンドについて解説する。こうし
+たワークアラウンドは、事情や理由がわからないと冗長あるいは不合理にみえる
+ことがあるため、理由をふくめたノウハウを共有しておくことは重要である。
+
+本章では特に、テストを繰り返し実行すると成功・失敗がくりかえされ、結果が
+不定になった事例を選定している。こうしたテストは flaky\footnote{flaky =
+当てにならない。} test とも呼ばれ、テストの連続実行(回帰テスト)において
+問題となる。
+
+ \section{初回のping送受信失敗}
+ \label{sec:ping-probrem}
+
+    \paragraph{事象}
+L3の通信試験(\code{ping}コマンド)で、最初の1パケット(場合によっては数パ
+ケット)だけ送受信に失敗する。そのため、テスト実行ごとにコマンド実行結果
+(ping packet loss)判定が変化して、テストが成功したり失敗したりする。
+
+    \paragraph{原因と対処}
+テスト対象が物理ネットワークであるため、ARP cache 等その時々のネットワー
+ク状態による結果のゆらぎが発生してしまう。よく知られたワークアラウンドと
+しては、テスト実行のまえに、予備的なパケット送受信をおこなって、テスト対
+象ネットワーク内の状態を更新しておくことである。本プロジェクトでも、
+\lstref{lst:ping-workaround}のように ping packet loss 測定前に ping を1
+パケット送受信しておく\footnote{本プロジェクトではこれを「捨てping」と呼
+んでいる。}ことで回避している~\cite{examples-pr49}。
+
+\begin{lstlisting}[caption=予備的ping実行の例,label=lst:ping-workaround,linebackgroundcolor={\ifnum\value{lstnumber}=3 \color{green!30}\fi}]
+When(/^ヨーヨーダイン社内部のユーザ PC に ping$/) do
+  cd('.') do
+    @src_host.exec "bash -c 'ping #{@user_pc.ip_address} -c 1; exit 0'"
+    @src_host.exec "ping #{@user_pc.ip_address} -c 4 > log/ping.log"
+  end
+end
+\end{lstlisting}
+
+ \section{Netcat/telnetコマンドのデータ送受信順序}
+ \label{sec:telnet-probrem}
+
+    \paragraph{事象}
+Telentを使った通信試験において、\lstref{lst:telnet-bk}に示すようにテスト
+が10回に1回程度しか成功しないという現象が発生した。テストではのように、
+サーバとして netcat (\code{nc}コマンド)、クライアントとして
+\code{telnet} コマンドを使用している。
+ 
+\begin{lstlisting}[caption=Telnetテストシナリオ,label=lst:telnet-bk]
+tajima@nettester_2nd:~/repo/examples-tjmtrhs$ bundle exec cucumber features/telnet_internal_network.feature
+@static
+Feature: 社内テスト環境設定  ヨーヨーダイン社の開発者として、
+社内テストサーバにアクセスしたい  なぜならテスト環境設定を行う必要があるから
+Scenario: 社内テストサーバへアクセス            # features/telnet_internal_network.feature:8
+Given ヨーヨーダイン社内部のテスト環境サーバ        # features/step_definitions/virtual_host.rb:14
+ And ヨーヨーダイン社内部のクライアント            # features/step_definitions/virtual_host.rb:6
+When 開発者 PC からテストサーバへTelnetでアクセス # features/step_definitions/telnet_steps.rb:2
+ Then 社内テストサーバにアクセス成功             # features/step_definitions/telnet_steps.rb:20
+expected "Trying 10.10.10.2...\nConnected to 10.10.10.2.\nEscape character is '^]'." to have file content: string includes: "TelnetOK" (RSpec::Expectations::ExpectationNotMetError)
+     ./features/step_definitions/telnet_steps.rb:21:in `/^社内テストサーバにアクセス成功$/'      features/telnet_internal_network.feature:12:in `Then 社内テストサーバにアクセス成功' Failing Scenarios: cucumber features/telnet_internal_network.feature:8 #
+ Scenario: 社内テストサーバへアクセス 1 scenario (1 failed) 4 steps (1 failed, 3 passed) 0m10.610s
+\end{lstlisting}
+
+    \paragraph{調査}
+
+原因を調査するために、同様の操作を手動で実行した場合(成功する場合)とテス
+トシナリオ実行で失敗する場合のそれぞれについて strace による調査を実施し
+た。\lstref{lst:telnet-success}に成功時、\lstref{lst:telnet-fail}に失敗
+時の strace ログを示す。どちらも前半部分は省略してあり、\code{connect}
+から 終了(\code{exit})までのログを抜粋してある。
+
+\begin{lstlisting}[caption=Telnet成功時(手動),label=lst:telnet-success,linebackgroundcolor={\ifnum\value{lstnumber}>22 \ifnum\value{lstnumber}<29\color{green!30}\fi\fi}]
+socket(PF_INET, SOCK_STREAM, IPPROTO_IP) = 3
+setsockopt(3, SOL_IP, IP_TOS, [16], 4)  = 0
+connect(3, {sa_family=AF_INET, sin_port=htons(8080), sin_addr=inet_addr("192.168.20.166")}, 16) = 0
+open("/etc/telnetrc", O_RDONLY)         = -1 ENOENT (No such file or directory)
+open("/home/nwtestsys/.telnetrc", O_RDONLY) = -1 ENOENT (No such file or directory)
+write(1, "Trying 192.168.20.166...\nConnect"..., 80Trying 192.168.20.166...
+Connected to 192.168.20.166.
+Escape character is '^]'.
+) = 80
+rt_sigprocmask(SIG_BLOCK, NULL, [], 8)  = 0
+rt_sigaction(SIGINT, {0x407fe0, [INT], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGQUIT, {0x407f90, [QUIT], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGWINCH, {0x407f70, [WINCH], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGTSTP, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, 8) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, FIONBIO, [1])                  = 0
+ioctl(1, FIONBIO, [1])                  = 0
+ioctl(3, FIONBIO, [1])                  = 0
+setsockopt(3, SOL_SOCKET, SO_OOBINLINE, [1], 4) = 0
+select(4, [0 3], [], [3], {0, 0})       = 1 (in [3], left {0, 0})
+recvfrom(3, "TelnetOK\n", 8191, 0, NULL, NULL) = 9
+select(4, [0 3], [1], [3], {0, 0})      = 2 (in [3], out [1], left {0, 0})
+write(1, "TelnetOK\n", 9TelnetOK
+)               = 9
+recvfrom(3, "", 8183, 0, NULL, NULL)    = 0
+rt_sigaction(SIGTSTP, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, 8) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, FIONBIO, [0])                  = 0
+ioctl(1, FIONBIO, [0])                  = 0
+close(3)                                = 0
+rt_sigaction(SIGTSTP, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, 8) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, FIONBIO, [1])                  = 0
+ioctl(1, FIONBIO, [1])                  = 0
+select(2, NULL, [1], NULL, NULL)        = 1 (out [1])
+rt_sigaction(SIGTSTP, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, 8) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, FIONBIO, [0])                  = 0
+ioctl(1, FIONBIO, [0])                  = 0
+rt_sigaction(SIGTSTP, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, 8) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, FIONBIO, [1])                  = 0
+ioctl(1, FIONBIO, [1])                  = 0
+select(2, NULL, [1], NULL, NULL)        = 1 (out [1])
+rt_sigaction(SIGTSTP, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fa39fd524a0}, 8) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, TCGETS, {B38400 opost isig icanon echo ...}) = 0
+ioctl(0, FIONBIO, [0])                  = 0
+ioctl(1, FIONBIO, [0])                  = 0
+write(2, "Connection closed by foreign hos"..., 35Connection closed by foreign host.
+) = 35
+close(-1)                               = -1 EBADF (Bad file descriptor)
+exit_group(1)                           = ?
++++ exited with 1 +++
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Telnet失敗時,label=lst:telnet-fail,linebackgroundcolor={\ifnum\value{lstnumber}>24 \ifnum\value{lstnumber}<26\color{green!30}\fi\fi}]
+socket(PF_INET, SOCK_STREAM, IPPROTO_IP) = 3
+setsockopt(3, SOL_IP, IP_TOS, [16], 4)  = 0
+connect(3, {sa_family=AF_INET, sin_port=htons(23), sin_addr=inet_addr("10.10.10.2")}, 16) = 0
+open("/etc/telnetrc", O_RDONLY)         = -1 ENOENT (No such file or directory)
+open("/root/.telnetrc", O_RDONLY)       = -1 ENOENT (No such file or directory)
+
+write(1, "Trying 10.10.10.2...\nConnected t"..., 72Trying 10.10.10.2...
+Connected to 10.10.10.2.
+Escape character is '^]'.
+) = 72
+rt_sigprocmask(SIG_BLOCK, NULL, [], 8)  = 0
+rt_sigaction(SIGINT, {0x407fe0, [INT], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGQUIT, {0x407f90, [QUIT], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGWINCH, {0x407f70, [WINCH], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {SIG_DFL, [], 0}, 8) = 0
+rt_sigaction(SIGTSTP, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, 8) = 0
+ioctl(0, TCGETS, 0x7ffc1c8e01d0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B0 opost isig icanon echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, TCGETS, 0x7ffc1c8e01d0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_START or TCSETS, {B0 opost isig icanon echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, FIONBIO, [1])                  = 0
+ioctl(1, FIONBIO, [1])                  = 0
+ioctl(3, FIONBIO, [1])                  = 0
+setsockopt(3, SOL_SOCKET, SO_OOBINLINE, [1], 4) = 0
+select(4, [0 3], [3], [3], {0, 0})      = 2 (in [0], out [3], left {0, 0})
+sendto(3, "\377\375\3\377\373\30\377\373\37\377\373 \377\373!\377\373\"\377\373'\377\375\5", 24, 0, NULL, 0) = 24
+read(0, "", 8191)                       = 0
+ioctl(0, TCGETS, 0x7ffc1c8e01a0)        = -1 ENOTTY (Inappropriate ioctl for device)
+rt_sigaction(SIGTSTP, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, 8) = 0
+ioctl(0, TCGETS, 0x7ffc1c8e01f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B0 -opost -isig -icanon -echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, TCGETS, 0x7ffc1c8e01f0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_START or TCSETS, {B0 -opost -isig -icanon -echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, FIONBIO, [0])                  = 0
+ioctl(1, FIONBIO, [0])                  = 0
+close(3)                                = 0
+rt_sigaction(SIGTSTP, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, 8) = 0
+ioctl(0, TCGETS, 0x7ffc1c8e01c0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B0 opost -isig -icanon echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, TCGETS, 0x7ffc1c8e01c0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_START or TCSETS, {B0 opost -isig -icanon echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, FIONBIO, [1])                  = 0
+ioctl(1, FIONBIO, [1])                  = 0
+select(2, NULL, [1], NULL, NULL)        = 1 (out [1])
+rt_sigaction(SIGTSTP, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, 8) = 0
+ioctl(0, TCGETS, 0x7ffc1c8e01c0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B0 -opost -isig -icanon -echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, TCGETS, 0x7ffc1c8e01c0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_START or TCSETS, {B0 -opost -isig -icanon -echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, FIONBIO, [0])                  = 0
+ioctl(1, FIONBIO, [0])                  = 0
+rt_sigaction(SIGTSTP, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, 8) = 0
+ioctl(0, TCGETS, 0x7ffc1c8e01c0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B0 opost -isig -icanon echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, TCGETS, 0x7ffc1c8e01c0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_START or TCSETS, {B0 opost -isig -icanon echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, FIONBIO, [1])                  = 0
+ioctl(1, FIONBIO, [1])                  = 0
+select(2, NULL, [1], NULL, NULL)        = 1 (out [1])
+rt_sigaction(SIGTSTP, {SIG_DFL, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, {0x40c4b0, [TSTP], SA_RESTORER|SA_RESTART, 0x7fdd72e1d4a0}, 8) = 0
+ioctl(0, TCGETS, 0x7ffc1c8e01d0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_STOP or TCSETSW, {B0 -opost -isig -icanon -echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, TCGETS, 0x7ffc1c8e01d0)        = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, SNDCTL_TMR_START or TCSETS, {B0 -opost -isig -icanon -echo ...}) = -1 ENOTTY (Inappropriate ioctl for device)
+ioctl(0, FIONBIO, [0])                  = 0
+ioctl(1, FIONBIO, [0])                  = 0
+write(2, "Connection closed by foreign hos"..., 35Connection closed by foreign host.
+) = 35
+close(-1)                               = -1 EBADF (Bad file descriptor)
+exit_group(1)                           = ?
++++ exited with 1 +++
+\end{lstlisting}
+
+成功時(\lstref{lst:telnet-success})では、\code{connect}後にサーバからの
+\verb|recvfrom(3, "TelnetOK\n", ...)|が先にきている(23行目)。しかし、失
+敗時(\lstref{lst:telnet-fail})では、クライアントからのネゴシエーションの
+\verb|sendto(3, "\377...", ...)|が先に実行されている(25行目)。この場合後
+続の\code{write}は実行されていない(そもそも\code{recv}しない)。
+
+これらの strace ログから、送受信順序によるものと仮定した。仮定を実証する
+ために、telnetクライアントを改変する。Telnetクライアントが\code{connect}
+したあとサーバから来るデータを先に受ける(\code{recv})ために、
+\code{connect}のあとに\code{sleep}を入れる
+(\lstref{lst:modified-telnet-client})。これをビルドして
+(\lstref{lst:howto-build-telnet})、テストステップの中で使用する
+(\lstref{lst:telnet-step})。結果として、エラーが発生しなくなることを確認
+できた。
+
+\begin{lstlisting}[caption=telnetクライアント改変,label=lst:modified-telnet-client]
+--- netkit-telnet-0.17/telnet/netlink.cc        2017-03-21 00:30:45.990808011 +0900
++++ netkit-telnet-0.17-mod/telnet/netlink.cc    2017-03-21 00:24:45.178808011 +0900
+@@ -158,6 +158,7 @@
+     if (::connect(net, addr->ai_addr, addr->ai_addrlen) < 0) {
+        return 1;
+     }
++    sleep(10);
+     return 2;
+ }
+\end{lstlisting}
+
+\begin{lstlisting}[caption=telnetクライアントのビルド手順,label=lst:howto-build-telnet]
+sudo echo "deb http://gb.archive.ubuntu.com/ubuntu/ xenial main restricted" | sudo tee -a /etc/apt/sources.list
+sudo echo "deb-src http://gb.archive.ubuntu.com/ubuntu/ xenial main restricted" | sudo tee -a /etc/apt/sources.list
+sudo apt-get source telnet
+sudo apt-get install libncurses-dev
+cd netkit-telnet-0.17
+./configure
+cd telnet
+make
+\end{lstlisting}
+
+\begin{lstlisting}[caption=改変telnetクライアントの使用,label=lst:telnet-step]
+When(/^ヨーヨーダイン社内部のテスト環境サーバに telnet でログイン$/) do
+  cd('.') do
+    @telnet_service = AsyncExecutor.new(host: @test_host, result_file: 'log/telnet_server.log')
+    @telnet_service.exec "bash -c 'echo LoginOK | sudo nc -l 23'"
+    @src_host.exec "bash -c '/home/nwtestsys/examples/telnet-source/netkit-telnet-0.17/telnet/telnet #{@test_host.ip_address} > log/login.log; exit 0'"
+  end
+end
+\end{lstlisting}
+
+    \paragraph{結果と対処}
+当初、netcat をサーバとして使用していた。サーバはクライアントからの接続
+を受け付けて echo するとすぐに切断する。結果としてサーバから送られたデー
+タの \code{recv} とクライアントが送るデータの \code{sendto} のどちらが早
+いかという順序(タイミング)問題が発生していたと考えられる。
+
+こうした問題はサーバ側に telnet daemon (telnetd) を使用することで回避可
+能である。しかし、telnetd を使用すると対話的処理(expect)が必要になってし
+まうため、テストステップが複雑になる。そこで、クライアント側に
+Net::Telnet を使用することで問題を回避している
+(\lstref{lst:telnet-step-new})。
+
+\begin{lstlisting}[caption=修正後テストステップ,label=lst:telnet-step-new]
+When(/^社内のテスト環境サーバに telnet でログイン$/) do
+  cd('.') do
+    @telnet_service = AsyncExecutor.new(host: @test_host, result_file: 'log/telnet_host.log')
+    @telnet_service.exec "bash -c 'echo LoginOK | sudo nc -l 23'"
+    @src_host.exec "ruby -e \"require 'net/telnet'; Net::Telnet.new('Host' => '#{@test_host.ip_address}', 'Port' => '23').cmd('') {|res| print res}\" > log/login.log"
+  end
+end
+\end{lstlisting}
+
+%%% Local Variables:
+%%% mode: yatex
+%%% TeX-master: "main.tex"
+%%% End:
