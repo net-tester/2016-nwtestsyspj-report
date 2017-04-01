@@ -260,18 +260,17 @@ end
 \end{lstlisting}
 
     \paragraph{結果と対処}
-当初、netcat をサーバとして使用していた。サーバはクライアントからの接続
-を受け付けて echo するとすぐに切断する。結果としてサーバから送られたデー
-タの \code{recv} とクライアントが送るデータの \code{sendto} のどちらが早
-いかという順序(タイミング)問題が発生していたと考えられる。
+サーバ (netcat) はクライアントからの接続を受け付けて echo するとすぐに切
+断する。結果としてサーバから送られたデータの \code{recv} とクライアント
+が送るデータの \code{sendto} のどちらが早いかという順序(タイミング)問題
+が発生していたと考えられる。
 
-こうした問題はサーバ側に telnet daemon (telnetd) を使用することで回避可
-能である。しかし、telnetd を使用すると対話的処理(expect)が必要になってし
-まうため、テストステップが複雑になる。そこで、クライアント側に
-Net::Telnet を使用することで問題を回避している
-(\lstref{lst:telnet-step-new})。
+こうした問題はサーバ側に telnet デーモン (telnetd) を使用することで回避
+可能である。しかし、telnetd を使用すると対話的処理が必要になってしまうた
+め、テストステップが複雑になる。そこで、クライアント側に Net::Telnet を
+使用することで問題を回避している(\lstref{lst:telnet-step-new})。
 
-\begin{lstlisting}[caption=修正後テストステップ,label=lst:telnet-step-new]
+\begin{lstlisting}[caption=修正後テストステップ,label=lst:telnet-step-new,linebackgroundcolor={\ifnum\value{lstnumber}=5 \color{green!30}\fi}]
 When(/^社内のテスト環境サーバに telnet でログイン$/) do
   cd('.') do
     @telnet_service = AsyncExecutor.new(host: @test_host, result_file: 'log/telnet_host.log')
