@@ -289,22 +289,11 @@ DPIDでOpen vSwitchのブリッジが作成され、OFCとの接続設定がお�
     % https://3.basecamp.com/3088280/buckets/867009/todos/368843648
     % Netns Checksum Offload 機能実装 – NetTester
     % https://3.basecamp.com/3088280/buckets/867009/todos/370752297
-NetTesterをつかったテストシナリオの実装・テスト実行の際、以下の条件で正
-しく通信がおこなえない問題がおきた。事象としては、テスト用ノードが生成し
-ているTCPパケットのチェックサムが incorrect となっていた。
-\begin{itemize}
- \item テスト用ノードをテスト対象ネットワークに trunk port で接続させる。
-       (OVSでVLAN Tagを操作する。)
- \item テストトラフィックとしてTCP通信をおこなう。
-       \begin{itemize}
-        \item SYN/FINフラグがついたトラフィックについては問題が発生しな
-              い。(TCPで特定のフラグがついたパケットで問題がおきる。)
-        \item ICMP通信については問題が発生しない。
-       \end{itemize}
-\end{itemize}
-事象の根本的な原因究明はできていない。ワークアラウンドとして、NetTester
-でテスト用ノード(Netns)を生成した際、ノード用のNIC(veth)でチェックサム計
-算のハードウェアオフロードを無効化している~\cite{net-tester-pr7}。
+NetTesterをつかったテストシナリオの実装・テスト実行の際、特定の条件下で
+正しく通信がおこなえない問題がおきた(詳細は
+\ref{sec:tcp-checksum-offload-trouble}参照)。ワークアラウンドとして、
+NetTesterでテスト用ノード(Netns)を生成した際、ノード用のNIC(veth)でチェッ
+クサム計算のハードウェアオフロードを無効化している。
 
   \subsection{テストシナリオ (net-tester/examples) のインストール}
   \label{sec:deploy-test-cenario}

@@ -1,16 +1,23 @@
 %% -*- coding: utf-8-unix -*-
 
 \chapter{テストシナリオ実装時のトラブルとワークアラウンド}
+\label{cpt:troubles}
+
 ネットワークのテストという観点で実際に発見できた問題点については
 \ref{sec:statictest-founded-issues}節でとりあげている。本章では、テスト
 シナリオ実装の際におきた問題点やワークアラウンドについて解説する。こうし
 たワークアラウンドは、事情や理由がわからないと冗長あるいは不合理にみえる
-ことがあるため、理由をふくめたノウハウを共有しておくことは重要である。
+ことがあるため、理由をふくめたノウハウを共有しておくことは重要である。本
+章であげた実際のトラブルシュー事例をもとに、テストシナリオのデバッグをど
+う考えるかについては\ref{sec:debugging-test-scenario}節で解説している。
 
-本章では特に、テストを繰り返し実行すると成功・失敗がくりかえされ、結果が
-不定になった事例を選定している。こうしたテストは flaky\footnote{flaky =
-当てにならない。} test とも呼ばれ、テストの連続実行(回帰テスト)において
-問題となる。
+本章では特に、テストを繰り返し実行すると成功・失敗がくりかえされてテスト
+結果が不定になった例を選定している(\ref{sec:ping-probrem}節・
+\ref{sec:telnet-probrem}節)。このようなテストは flaky\footnote{flaky =当
+てにならない。} test とも呼ばれ、テストの連続実行(回帰テスト)において問
+題となる。また、テストシナリオに本来であれば影響しないと考える条件変化に
+よって、テスト成否結果が変化した事例についてもとりあげた
+(\ref{sec:SSG-troubles}節)。
 
  \section{初回のping送受信失敗}
  \label{sec:ping-probrem}
@@ -29,7 +36,7 @@ L3の通信試験(\code{ping}コマンド)で、最初の1パケット(場合に
 パケット送受信しておく\footnote{本プロジェクトではこれを「捨てping」と呼
 んでいる。}ことで回避している~\cite{examples-pr49}。
 
-\begin{lstlisting}[caption=予備的ping実行の例,label=lst:ping-workaround,linebackgroundcolor={\ifnum\value{lstnumber}=3 \color{green!30}\fi}]
+\begin{lstlisting}[language=,caption=予備的ping実行の例,label=lst:ping-workaround,linebackgroundcolor={\ifnum\value{lstnumber}=3 \color{green!30}\fi}]
 When(/^ヨーヨーダイン社内部のユーザ PC に ping$/) do
   cd('.') do
     @src_host.exec "bash -c 'ping #{@user_pc.ip_address} -c 1; exit 0'"
@@ -238,7 +245,7 @@ exit_group(1)                           = ?
  }
 \end{lstlisting}
 
-\begin{lstlisting}[caption=telnetクライアントのビルド手順,label=lst:howto-build-telnet]
+\begin{lstlisting}[language=sh,caption=telnetクライアントのビルド手順,label=lst:howto-build-telnet]
 sudo echo "deb http://gb.archive.ubuntu.com/ubuntu/ xenial main restricted" | sudo tee -a /etc/apt/sources.list
 sudo echo "deb-src http://gb.archive.ubuntu.com/ubuntu/ xenial main restricted" | sudo tee -a /etc/apt/sources.list
 sudo apt-get source telnet
@@ -279,6 +286,231 @@ When(/^社内のテスト環境サーバに telnet でログイン$/) do
   end
 end
 \end{lstlisting}
+
+ \section{Juniper SSG の不正なパケット処理に関連するトラブル}
+ \label{sec:SSG-troubles}
+
+この節では、
+\begin{itemize}
+ \item NetTesterサーバまたは物理OpenFlowスイッチによる不正なパケットの生成
+ \item FW(Juniper SSG)による不正なパケットの処理
+\end{itemize}
+に関連すると考えられた事象について解説する。いずれもワークアラウンドによっ
+て回避しており、詳細原因までは追求できていないが、テスター側・テスト対象
+ネットワーク(内部の機器)それぞれの動作によるトラブルだと推測される。こう
+した組み合せによるトラブルでは不可解な事象が発生し、かつ原因の推定が難し
+いため注意が必要である。
+
+ \subsection{TCP checksum offload 動作に関連するトラブル}
+ \label{sec:tcp-checksum-offload-trouble}
+
+\ref{sec:nettester-server-software}節では、トラブルによりテェックサム計
+算オフロードを無効化を設定していることを述べた。本節ではその際の事象と調
+査内容について解説する。
+
+    \paragraph{事象}
+テストシナリオ中、TCP接続をおこなうツールを利用したとき、通信が成功せず
+にテストが失敗する。あるいはTCPコネクションが確立するが、単純な接続確認・
+送受信しかしないテストにもかかわらず、終了するまでに2分前後かかる。TCPで
+はなくICMP(ping)に変更すると、同様のテスト条件でも問題が発生しない。
+
+    \paragraph{調査}
+通信種別によって問題の有無が変化するため以下のように順を追って調査している。
+\begin{itemize}
+ \item テストノードのパッチ接続先の条件による変化 (access/trunk port)
+ \item Tester set の変更による変化 (異なる物理OFS/サーバによるハードウェ
+       ア等の切り分け)
+ \item テストトラフィックのパケットキャプチャ。テストノード/NetTesterサー
+       バ出口/OFS入出力/テスト用ネットワークにあるL2SW/FWそれぞれの入出
+       力などを個別にキャプチャして比較検討。
+\end{itemize}
+
+最終的に、以下の条件で TCP パケットのチェックサムが incorrect となってい
+ることがわかった。
+\begin{itemize}
+ \item テスト用ノードをテスト対象ネットワークに trunk port で接続させる。
+       (OVS で VLAN Tag を操作する。)
+ \item テストトラフィックとして TCP 通信をおこなう。
+       \begin{itemize}
+        \item SYN/FIN フラグがついたトラフィックについては問題が発生しな
+              い。(TCPで特定のフラグがついたパケットで問題がおきる。)
+        \item ICMP 通信については問題が発生しない。
+       \end{itemize}
+ \item L2SW(Cisco Catalyst3750G)内のL2セグメントで折りかえす場合は問題発
+       生せず。FW (Juniper SSG)を経由する通信(テストトラフィック)につい
+       て影響をうけている。
+\end{itemize}
+
+条件を変えながらキャプチャをみていると、VLAN tag ありでテスト対象ネット
+ワークへテストノードをパッチするケースでは、TCP sequence number が不正に
+なったり、その結果としてパケット再送が発生していることがわかった。テスト
+ノードを access port へパッチすると発生しないことから、NetTester による
+VLAN tag 操作がおこなわれるポイントでの問題と考えられた。
+
+実際にどのようなパケットが生成されていたかを\lstref{lst:capture-untag}お
+よび\lstref{lst:capture-tag}に示す。それぞれ、NetTesterサーバ(KVMホスト
+上の仮想マシン)のSSW--PSW間通信をパススルーしているKVMホストの物理NICで
+取得したものである(\figref{fig:poc-env-physical-detail}のem2)。VLAN Tag
+およびチェックサムについてまとめると\tabref{tab:capture-result}のように
+なる。
+
+\begin{lstlisting}[language=,caption=KVM Hostキャプチャ(Untag),label=lst:capture-untag]
+20:59:31.948164 00:d9:87:40:c2:7d > 00:10:db:ff:20:60, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 1192, offset 0, flags [DF], proto TCP (6), length 52)	10.10.10.4.44910 > 10.10.0.100.80: Flags [.], cksum 0x1ea2 (incorrect -> 0xbd9a), seq 1, ack 1, win 229, options [nop,nop,TS val 3228510328 ecr 3228510328], length 0
+20:59:31.948196 00:d9:87:40:c2:7d > 00:10:db:ff:20:60, ethertype 802.1Q (0x8100), length 70: vlan 2025, p 0, ethertype IPv4, (tos 0x0, ttl 64, id 1192, offset 0, flags [DF], proto TCP (6), length 52)	10.10.10.4.44910 > 10.10.0.100.80: Flags [.], cksum 0xbd9a (correct), seq 1, ack 1, win 229, options [nop,nop,TS val 3228510328 ecr 3228510328], length 0
+\end{lstlisting}
+
+\begin{lstlisting}[language=,caption=KVM Hostキャプチャ(Tag),label=lst:capture-tag]
+20:59:33.565558 00:2a:28:4d:69:2f > 00:10:db:ff:20:60, ethertype 802.1Q (0x8100), length 70: vlan 2023, p 0, ethertype IPv4, (tos 0x0, ttl 64, id 57905, offset 0, flags [DF], proto TCP (6), length 52)	10.10.0.100.80 > 10.10.10.4.44910: Flags [.], cksum 0x1ea2 (incorrect -> 0xba70), seq 1, ack 3, win 227, options [nop,nop,TS val 3228510733 ecr 3228510733], length 0 
+20:59:33.565738 00:10:db:ff:20:60 > 00:d9:87:40:c2:7d, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 63, id 57905, offset 0, flags [DF], proto TCP (6), length 52)	10.10.0.100.80 > 10.10.10.4.44910: Flags [.], cksum 0x1ea2 (incorrect -> 0xca49), seq 4294963240, ack 3, win 227, options [nop,nop,TS val 3228510733 ecr 3228510733], length 0
+\end{lstlisting}
+
+\begin{table}[h]
+ \centering
+ \caption{パケットキャプチャ結果}
+ \label{tab:capture-result}
+ \begin{tabularx}{\linewidth}{l|X|X}
+  \hline
+  パッチのVLAN Tag設定
+  & NetTester Server to Testee (1行目)
+  & Testee to NetTester Server (2行目,L3終端後) \\
+  \hline
+  \hline
+  Tag なし (\lstref{lst:capture-untag})
+  & Checksum incorrect
+  & Checksum correct \\
+  Tag あり (\lstref{lst:capture-tag})
+  & Checksum incorrect
+  & Checksum incorrect \\
+  \hline
+ \end{tabularx}
+\end{table}
+
+    \paragraph{結果と対処}
+\tabref{tab:capture-result}に示したように、VLAN tag などいくつかの条件で
+はチェックサムが incorrect になってしまい、テストトラフィックとして生成
+したTCP通信がうまくいかなかった。\tabref{tab:capture-result}の結果からサー
+バ物理NICでのパケット処理機能がうまく機能していないと予想された。そこで、
+対処としてチェックサムオフロードの機能を無効~\cite{net-tester-pr7}にして
+いる(\ref{sec:nettester-server-software}節)。
+\begin{lstlisting}[language=,]
+sudo ip netns exec [test node (netns)] ethtool -K [test node veth] tx off
+\end{lstlisting}
+
+根本的な原因までは調査・追求していない。Tag (dot1q tag) がある場合なぜ
+チェックサムオフロードがうまく機能しない理由については不明(未調査)である。
+原因としては、FW(SSG)が不正なチェックサムをもつパケットをうまく処理でき
+ずに、一部だけ通してしまう可能性も考えられる。
+
+参考情報として、NICの情報を\lstref{lst:nic-info}に、NICドライバの情報を
+\lstref{lst:nic-driver-info}に示す。
+
+\begin{lstlisting}[language=,caption=NIC情報,label=lst:nic-info]
+tajima@NW-TEST-SYS-PJ-SERV:~$ sudo lspci | grep -i network
+01:00.0 Ethernet controller: Intel Corporation I350 Gigabit Network Connection (rev 01)
+01:00.1 Ethernet controller: Intel Corporation I350 Gigabit Network Connection (rev 01)
+07:00.0 Ethernet controller: Intel Corporation I350 Gigabit Network Connection (rev 01)
+07:00.1 Ethernet controller: Intel Corporation I350 Gigabit Network Connection (rev 01)
+\end{lstlisting}
+
+\begin{lstlisting}[language=,caption=NICドライバ情報,label=lst:nic-driver-info]
+tajima@NW-TEST-SYS-PJ-SERV:~$ sudo ethtool -i em2
+driver: igb
+version: 5.2.13-k
+firmware-version: 1.61, 0x8000090e
+bus-info: 0000:07:00.1
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+supports-priv-flags: no
+\end{lstlisting}
+
+ \subsection{物理OFSリプレースにともなうFW動作トラブル}
+ \label{sec:ofs-replace-fw-trouble}
+
+    \paragraph{事象}
+本プロジェクトの検証環境は沖縄オープンラボラトリのテストベッドを借用して
+構築している。使用しているOpenFlow Switchなどもオープンラボの機材を利用
+している。一部のOFSについて機材の置き換え(交換)が発生した際に、交換前は
+すべて成功していたテストの一部が失敗するようになった。このとき、テストを
+くりかえすと成功・失敗は変化し、常に失敗し続けるわけではない(高頻度で失
+敗するシナリオがある)。
+
+    \paragraph{調査}
+失敗するテストシナリオを比較すると、L3でセグメントを経由する通信をおこな
+うテストシナリオが高頻度で失敗することがわかった。PoC環境のL3(default
+gateway)はFWであるため、FWの動作に何らかの問題があることが想定された。問
+題箇所のしぼりこみ・切り分け対応としては以下の調査をおこなった。
+
+\begin{itemize}
+ \item テスト用ノード(クライアント・サーバ)側でパケットキャプチャ
+       \begin{itemize}
+        \item FWでNATしている(セッション情報が表示される,
+              \lstref{lst:fw-nat-info})ものの、実際にテストノード側でパ
+              ケットを見るとNATされていない(\lstref{lst:server-capture})。
+        \item テスト用ノードからreplyしていても届いていないことがある。
+       \end{itemize}
+ \item FW1/2 を再起動させる : 問題解決せず
+ \item 物理OFSのフローテーブルのクリア : 問題解決せず
+ \item L2SW, SSGの MACアドレステーブルのチェック
+       \begin{itemize}
+        \item SSGがサーバ側のMACアドレスを学習できていない。
+        \item テストノードから default gateway への ICMP に応答がない。
+       \end{itemize}
+ \item FWハードウェアのきりわけ
+       \begin{itemize}
+        \item FW1のアップリンクをリンクダウンさせ、強制的にFW2がactiveに
+              なるように変更してテストを実行。テストは通るが、いくつかの
+              テストシナリオでは完了までに時間がかかる(数分)。
+       \end{itemize}
+\end{itemize}
+
+\begin{lstlisting}[language=,caption=FW NATセッション情報,label=lst:fw-nat-info]
+test:FW1(M)-> get session
+nat used ipv6 addr: allocated 0/maximum 64256
+alloc 4/max 16064, alloc failed 0, mcast alloc 0, di alloc failed 0
+total reserved 0, free sessions in shared pool 16060
+id 15689/s**,vsys 0,flag 48000000/4000/0001/0000,policy 24,time 2, dip 4 module 0
+ if 6(nspflag 801805):10.10.0.100/45402->198.51.100.3/80,6,00217094feda,sess token 18,vlan 2023,tun 0,vsd 0,route 5,wsf 0
+ if 0(nspflag 10800804):203.0.113.6/8637<-198.51.100.3/80,6,00211c2c7245,sess token 17,vlan 2021,tun 0,vsd 0,route 7,wsf 7
+\end{lstlisting}
+
+\begin{lstlisting}[language=,caption=テストノード(サーバ)側キャプチャ,label=lst:server-capture]
+tajima@nettester_1st:~$ sudo tcpdump -i ens5 -n -nn -v
+tcpdump: listening on ens5, link-type EN10MB (Ethernet), capture size 262144 bytes
+06:34:13.324210 ARP, Ethernet (len 6), IPv4 (len 4), Request who-has 10.10.0.1 tell 10.10.0.100, length 28
+06:34:13.326263 ARP, Ethernet (len 6), IPv4 (len 4), Request who-has 10.10.0.1 tell 10.10.0.100, length 46
+06:34:13.332088 ARP, Ethernet (len 6), IPv4 (len 4), Reply 10.10.0.1 is-at 00:10:db:ff:20:60, length 46
+06:34:13.332542 IP (tos 0x0, ttl 64, id 32529, offset 0, flags [DF], proto TCP (6), length 60)
+    10.10.0.100.45402 > 198.51.100.3.80: Flags [S], cksum 0xc51c (correct), seq 2276330937, win 29200, options [mss 1460,sackOK,TS val 578056872 ecr 0,nop,wscale 7], length 0
+06:34:13.339657 IP (tos 0x0, ttl 64, id 32529, offset 0, flags [DF], proto TCP (6), length 60)
+    10.10.0.100.45402 > 198.51.100.3.80: Flags [S], cksum 0xc51c (correct), seq 2276330937, win 29200, options [mss 1460,sackOK,TS val 578056872 ecr 0,nop,wscale 7], length 0
+\end{lstlisting}
+
+    \paragraph{結果と対処}
+
+最終的には、交換(リプレース)した物理OpenFlowスイッチ(OFS1)の再起動で解決
+した。原因としては次のような要因が推測される(詳細な原因追求はできていな
+い)。
+\begin{itemize}
+ \item \ref{sec:tcp-checksum-offload-trouble}節のように、FW(SSG)はパケッ
+       トに不備があっても通してしまう事例がある。この事例でも物理
+       OFS(OFS1)に何らかの不具合があって、パケットが全部は送信されていな
+       いと仮定する。L2SWEX--FW1--L2SW1間は障害試験のためにOFS1を経由す
+       る(\figref{fig:patch-layer1},
+       \figref{fig:poc-env-physical-detail})。FW1がactiveな場合、L2SW-FW
+       間トラフィックがOFS1を通るのでパケットに問題が発生する。しかしSSG
+       はそれを無視して通す。FW2をactiveにするとOFS1を経由しないためにテ
+       ストが成功する。
+ \item 物理OpenFlowスイッチを交換したとき、交換後のスイッチは
+       \code{fail\_mode=secure}ではなくL2スイッチとして動作していた
+       (\ref{sec:nettester-deploy-psw}節)。そのため、L2SW (Cisco
+       Catalyst 3750G) ではVLAN mismatch となっていた。その後
+       \code{fail\_mode}を設定して VLAN mismatch 解決された。L2SW(Cisco)
+       側でインタフェース状態等を確認していたものの、物理OFS--L2SW間ポー
+       トに何かの状態が残っていた可能性がある。(OFS1の再起動でおきたポー
+       トの up/down により問題が解決した。)
+\end{itemize}
 
 %%% Local Variables:
 %%% mode: yatex
