@@ -1,4 +1,4 @@
-# How to typeseet the document
+# How to typeset the document
 
 ## How to setup TeX environment
 With Ubuntu/16.04 Desktop.
@@ -29,6 +29,14 @@ $max_repeat       = 5;
 $pdf_mode         = 3;
 $pvc_view_file_via_temporary = 0;
 $pdf_previewer    = 'xdg-open';
+```
+## install jlisting.sty
+See [TeXでソースコードを埋め込む - Qiita](http://qiita.com/ayihis@github/items/c779e4ab5cd7580f1f87)
+```
+wget http://sourceforge.jp/projects/mytexpert/downloads/26068/jlisting.sty.bz2/
+bunzip2 jlisting.sty.bz2
+sudo cp jlisting.sty /usr/share/texlive/texmf-dist/tex/latex/listings/
+sudo mktexlsr
 ```
 
 ## Typeset

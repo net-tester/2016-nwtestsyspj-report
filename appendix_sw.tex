@@ -355,8 +355,8 @@ host.device = link.device('interface_name')
 NetTester自体をテストするためのテストシナリオ
 \footnote{\url{https://github.com/net-tester/net-tester/blob/develop/features/step_definitions/net_tester_physical_switch_steps.rb},
 \url{https://github.com/net-tester/net-tester/blob/develop/features/step_definitions/net_tester_steps.rb}}
-実装の中で、NetTester本体の起動では以下のような処理をしている
-(\lstref{lst:run-nettester})。
+実装の中で、NetTester本体の起動では\lstref{lst:run-nettester}に示す処理
+をしている。
 \begin{lstlisting}[caption=NetTesterの起動,label=lst:run-nettester]
  Given(/^DPID が (\S+) の NetTester 物理スイッチ$/) do |dpid|
   @physical_test_switch = PhysicalTestSwitch.create(dpid: dpid.hex)

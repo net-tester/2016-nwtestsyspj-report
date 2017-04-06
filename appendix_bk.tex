@@ -77,7 +77,7 @@ expected "Trying 10.10.10.2...\nConnected to 10.10.10.2.\nEscape character is '^
 時の strace ログを示す。どちらも前半部分は省略してあり、\code{connect}
 から 終了(\code{exit})までのログを抜粋してある。
 
-\begin{lstlisting}[caption=Telnet成功時(手動),label=lst:telnet-success,linebackgroundcolor={\ifnum\value{lstnumber}>22 \ifnum\value{lstnumber}<29\color{green!30}\fi\fi}]
+\begin{lstlisting}[language=,caption=Telnet成功時(手動),label=lst:telnet-success,linebackgroundcolor={\ifnum\value{lstnumber}>22 \ifnum\value{lstnumber}<29\color{green!30}\fi\fi}]
 socket(PF_INET, SOCK_STREAM, IPPROTO_IP) = 3
 setsockopt(3, SOL_IP, IP_TOS, [16], 4)  = 0
 connect(3, {sa_family=AF_INET, sin_port=htons(8080), sin_addr=inet_addr("192.168.20.166")}, 16) = 0
@@ -145,7 +145,7 @@ exit_group(1)                           = ?
 +++ exited with 1 +++
 \end{lstlisting}
 
-\begin{lstlisting}[caption=Telnet失敗時,label=lst:telnet-fail,linebackgroundcolor={\ifnum\value{lstnumber}>24 \ifnum\value{lstnumber}<26\color{green!30}\fi\fi}]
+\begin{lstlisting}[language=,caption=Telnet失敗時,label=lst:telnet-fail,linebackgroundcolor={\ifnum\value{lstnumber}>24 \ifnum\value{lstnumber}<26\color{green!30}\fi\fi}]
 socket(PF_INET, SOCK_STREAM, IPPROTO_IP) = 3
 setsockopt(3, SOL_IP, IP_TOS, [16], 4)  = 0
 connect(3, {sa_family=AF_INET, sin_port=htons(23), sin_addr=inet_addr("10.10.10.2")}, 16) = 0
@@ -293,13 +293,13 @@ end
 この節では、
 \begin{itemize}
  \item NetTesterサーバまたは物理OpenFlowスイッチによる不正なパケットの生成
- \item FW(Juniper SSG)による不正なパケットの処理
+ \item FW (Juniper SSG)による不正なパケットの処理
 \end{itemize}
 に関連すると考えられた事象について解説する。いずれもワークアラウンドによっ
-て回避しており、詳細原因までは追求できていないが、テスター側・テスト対象
-ネットワーク(内部の機器)それぞれの動作によるトラブルだと推測される。こう
-した組み合せによるトラブルでは不可解な事象が発生し、かつ原因の推定が難し
-いため注意が必要である。
+て回避しており、詳細原因までは追求できていないが、テスター・テスト対象ネッ
+トワーク(内部の機器)それぞれの動作によるトラブルだと推測される。こうした
+組み合せによるトラブルでは不可解な事象が発生し、かつ原因の推定が難しいた
+め注意が必要である。
 
  \subsection{TCP checksum offload 動作に関連するトラブル}
  \label{sec:tcp-checksum-offload-trouble}
@@ -317,12 +317,13 @@ end
     \paragraph{調査}
 通信種別によって問題の有無が変化するため以下のように順を追って調査している。
 \begin{itemize}
- \item テストノードのパッチ接続先の条件による変化 (access/trunk port)
- \item Tester set の変更による変化 (異なる物理OFS/サーバによるハードウェ
-       ア等の切り分け)
- \item テストトラフィックのパケットキャプチャ。テストノード/NetTesterサー
-       バ出口/OFS入出力/テスト用ネットワークにあるL2SW/FWそれぞれの入出
-       力などを個別にキャプチャして比較検討。
+ \item テストノードのパッチ接続先の条件による事象変化の確認。(パッチ接続
+       先ポートの access/trunk による違いの確認。)
+ \item Tester set の変更による事象変化の確認。(異なる物理OFS/サーバによ
+       るハードウェア等の切り分け。)
+ \item テストトラフィックのパケットキャプチャ取得と比較。(テストノード
+       /NetTesterサーバ出口/OFS入出力/テスト用ネットワークにあるL2SW/FW
+       それぞれの入出力などを個別にキャプチャ取得。)
 \end{itemize}
 
 最終的に、以下の条件で TCP パケットのチェックサムが incorrect となってい
@@ -354,12 +355,12 @@ VLAN tag 操作がおこなわれるポイントでの問題と考えられた�
 およびチェックサムについてまとめると\tabref{tab:capture-result}のように
 なる。
 
-\begin{lstlisting}[language=,caption=KVM Hostキャプチャ(Untag),label=lst:capture-untag]
+\begin{lstlisting}[language=,caption=KVM Hostキャプチャ(タグなし),label=lst:capture-untag]
 20:59:31.948164 00:d9:87:40:c2:7d > 00:10:db:ff:20:60, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 64, id 1192, offset 0, flags [DF], proto TCP (6), length 52)	10.10.10.4.44910 > 10.10.0.100.80: Flags [.], cksum 0x1ea2 (incorrect -> 0xbd9a), seq 1, ack 1, win 229, options [nop,nop,TS val 3228510328 ecr 3228510328], length 0
 20:59:31.948196 00:d9:87:40:c2:7d > 00:10:db:ff:20:60, ethertype 802.1Q (0x8100), length 70: vlan 2025, p 0, ethertype IPv4, (tos 0x0, ttl 64, id 1192, offset 0, flags [DF], proto TCP (6), length 52)	10.10.10.4.44910 > 10.10.0.100.80: Flags [.], cksum 0xbd9a (correct), seq 1, ack 1, win 229, options [nop,nop,TS val 3228510328 ecr 3228510328], length 0
 \end{lstlisting}
 
-\begin{lstlisting}[language=,caption=KVM Hostキャプチャ(Tag),label=lst:capture-tag]
+\begin{lstlisting}[language=,caption=KVM Hostキャプチャ(タグあり),label=lst:capture-tag]
 20:59:33.565558 00:2a:28:4d:69:2f > 00:10:db:ff:20:60, ethertype 802.1Q (0x8100), length 70: vlan 2023, p 0, ethertype IPv4, (tos 0x0, ttl 64, id 57905, offset 0, flags [DF], proto TCP (6), length 52)	10.10.0.100.80 > 10.10.10.4.44910: Flags [.], cksum 0x1ea2 (incorrect -> 0xba70), seq 1, ack 3, win 227, options [nop,nop,TS val 3228510733 ecr 3228510733], length 0 
 20:59:33.565738 00:10:db:ff:20:60 > 00:d9:87:40:c2:7d, ethertype IPv4 (0x0800), length 66: (tos 0x0, ttl 63, id 57905, offset 0, flags [DF], proto TCP (6), length 52)	10.10.0.100.80 > 10.10.10.4.44910: Flags [.], cksum 0x1ea2 (incorrect -> 0xca49), seq 4294963240, ack 3, win 227, options [nop,nop,TS val 3228510733 ecr 3228510733], length 0
 \end{lstlisting}
@@ -396,10 +397,10 @@ VLAN tag 操作がおこなわれるポイントでの問題と考えられた�
 sudo ip netns exec [test node (netns)] ethtool -K [test node veth] tx off
 \end{lstlisting}
 
-根本的な原因までは調査・追求していない。Tag (dot1q tag) がある場合なぜ
-チェックサムオフロードがうまく機能しない理由については不明(未調査)である。
-原因としては、FW(SSG)が不正なチェックサムをもつパケットをうまく処理でき
-ずに、一部だけ通してしまう可能性も考えられる。
+根本的な原因までは調査・追求していない。Tag (dot1q tag) がある場合にチェッ
+クサムオフロードがうまく機能しない理由については不明(未調査)である。原因
+としては、FW(SSG)が不正なチェックサムをもつパケットをうまく処理できずに、
+一部だけ通してしまう可能性も考えられる。
 
 参考情報として、NICの情報を\lstref{lst:nic-info}に、NICドライバの情報を
 \lstref{lst:nic-driver-info}に示す。
@@ -429,23 +430,23 @@ supports-priv-flags: no
  \label{sec:ofs-replace-fw-trouble}
 
     \paragraph{事象}
-本プロジェクトの検証環境は沖縄オープンラボラトリのテストベッドを借用して
-構築している。使用しているOpenFlow Switchなどもオープンラボの機材を利用
-している。一部のOFSについて機材の置き換え(交換)が発生した際に、交換前は
-すべて成功していたテストの一部が失敗するようになった。このとき、テストを
-くりかえすと成功・失敗は変化し、常に失敗し続けるわけではない(高頻度で失
-敗するシナリオがある)。
+本プロジェクトの検証環境は沖縄オープンラボラトリのテストベッドを借用した。
+OpenFlowスイッチなどもオープンラボの機材を利用している。一部のOFS(OFS1)
+についてオープンラボ内部の機材交換が発生した際に、交換前はすべて成功して
+いたテストの一部が失敗するようになった。このとき、テストをくりかえすと成
+功・失敗は変化し、常に失敗し続けるわけではない(高頻度で失敗するシナリオ
+がある)。
 
     \paragraph{調査}
 失敗するテストシナリオを比較すると、L3でセグメントを経由する通信をおこな
-うテストシナリオが高頻度で失敗することがわかった。PoC環境のL3(default
+うテストシナリオが高頻度で失敗することがわかった。PoC環境のL3 (default
 gateway)はFWであるため、FWの動作に何らかの問題があることが想定された。問
 題箇所のしぼりこみ・切り分け対応としては以下の調査をおこなった。
 
 \begin{itemize}
  \item テスト用ノード(クライアント・サーバ)側でパケットキャプチャ
        \begin{itemize}
-        \item FWでNATしている(セッション情報が表示される,
+        \item FWでNATしている(セッション情報が表示される;
               \lstref{lst:fw-nat-info})ものの、実際にテストノード側でパ
               ケットを見るとNATされていない(\lstref{lst:server-capture})。
         \item テスト用ノードからreplyしていても届いていないことがある。
@@ -503,13 +504,12 @@ tcpdump: listening on ens5, link-type EN10MB (Ethernet), capture size 262144 byt
        はそれを無視して通す。FW2をactiveにするとOFS1を経由しないためにテ
        ストが成功する。
  \item 物理OpenFlowスイッチを交換したとき、交換後のスイッチは
-       \code{fail\_mode=secure}ではなくL2スイッチとして動作していた
-       (\ref{sec:nettester-deploy-psw}節)。そのため、L2SW (Cisco
-       Catalyst 3750G) ではVLAN mismatch となっていた。その後
-       \code{fail\_mode}を設定して VLAN mismatch 解決された。L2SW(Cisco)
-       側でインタフェース状態等を確認していたものの、物理OFS--L2SW間ポー
-       トに何かの状態が残っていた可能性がある。(OFS1の再起動でおきたポー
-       トの up/down により問題が解決した。)
+       \code{fail\_mode=secure}ではなかったため learning switch として動
+       作していた(\ref{sec:nettester-deploy-psw}節)。そのため、L2SWでは
+       VLAN mismatch となっていた。その後\code{fail\_mode}を設定して
+       VLAN mismatch 解決された。L2SW 側でインタフェース状態を確認してい
+       たものの、物理OFS--L2SW間ポートに何かの状態が残っていた可能性があ
+       る。(OFS1の再起動でおきたポートの up/down により問題が解決した。)
 \end{itemize}
 
 %%% Local Variables:
