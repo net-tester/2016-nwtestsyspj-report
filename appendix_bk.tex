@@ -8,15 +8,15 @@
 シナリオ実装の際におきた問題点やワークアラウンドについて解説する。こうし
 たワークアラウンドは、事情や理由がわからないと冗長あるいは不合理にみえる
 ことがあるため、理由をふくめたノウハウを共有しておくことは重要である。本
-章であげた実際のトラブルシュー事例をもとに、テストシナリオのデバッグをど
-う考えるかについては\ref{sec:debugging-test-scenario}節で解説している。
+章であげた実際のトラブルシュート事例をもとに、テストシナリオのデバッグを
+どう考えるかについては\ref{sec:debugging-test-scenario}節で解説している。
 
-本章では特に、テストを繰り返し実行すると成功・失敗がくりかえされてテスト
-結果が不定になった例を選定している(\ref{sec:ping-probrem}節・
-\ref{sec:telnet-probrem}節)。このようなテストは flaky\footnote{flaky =当
-てにならない。} test とも呼ばれ、テストの連続実行(回帰テスト)において問
-題となる。また、テストシナリオに本来であれば影響しないと考える条件変化に
-よって、テスト成否結果が変化した事例についてもとりあげた
+本章では特に、テストを複数回実行すると成功・失敗がくりかえされてテスト結
+果が不定になった例を選定している(\ref{sec:ping-probrem}節・
+\ref{sec:telnet-probrem}節)。このようなテストは flaky\footnote{flaky =
+「当てにならない」} test とも呼ばれ、テストの連続実行(回帰テスト)におい
+て問題となる。また、テストシナリオに本来であれば影響しないはずの条件変化
+によって、テスト成否結果が変化した事例についてもとりあげた
 (\ref{sec:SSG-troubles}節)。
 
  \section{初回のping送受信失敗}
@@ -29,9 +29,9 @@ L3の通信試験(\code{ping}コマンド)で、最初の1パケット(場合に
 
     \paragraph{原因と対処}
 テスト対象が物理ネットワークであるため、ARP cache 等その時々のネットワー
-ク状態による結果のゆらぎが発生してしまう。よく知られたワークアラウンドと
-しては、テスト実行のまえに、予備的なパケット送受信をおこなって、テスト対
-象ネットワーク内の状態を更新しておくことである。本プロジェクトでも、
+ク状態による結果のゆらぎが発生してしまう。よく知られたワークアラウンドは、
+テスト実行前に予備的なパケット送受信をおこなって、テスト対象ネットワーク
+内の状態を更新しておくことである。本プロジェクトでも、
 \lstref{lst:ping-workaround}のように ping packet loss 測定前に ping を1
 パケット送受信しておく\footnote{本プロジェクトではこれを「捨てping」と呼
 んでいる。}ことで回避している~\cite{examples-pr49}。
@@ -49,10 +49,10 @@ end
  \label{sec:telnet-probrem}
 
     \paragraph{事象}
-Telentを使った通信試験において、\lstref{lst:telnet-bk}に示すようにテスト
-が10回に1回程度しか成功しないという現象が発生した。テストではのように、
-サーバとして netcat (\code{nc}コマンド)、クライアントとして
-\code{telnet} コマンドを使用している。
+Telentを使った通信試験において、\lstref{lst:telnet-bk}のようにテストが10
+回に1回程度しか成功しない事象が発生した。テストではサーバとして netcat
+(\code{nc}コマンド)、クライアントとして\code{telnet} コマンドを使用して
+いる(\lstref{lst:telnet-step})。
  
 \begin{lstlisting}[caption=Telnetテストシナリオ,label=lst:telnet-bk]
 tajima@nettester_2nd:~/repo/examples-tjmtrhs$ bundle exec cucumber features/telnet_internal_network.feature
@@ -67,6 +67,16 @@ When 開発者 PC からテストサーバへTelnetでアクセス # features/st
 expected "Trying 10.10.10.2...\nConnected to 10.10.10.2.\nEscape character is '^]'." to have file content: string includes: "TelnetOK" (RSpec::Expectations::ExpectationNotMetError)
      ./features/step_definitions/telnet_steps.rb:21:in `/^社内テストサーバにアクセス成功$/'      features/telnet_internal_network.feature:12:in `Then 社内テストサーバにアクセス成功' Failing Scenarios: cucumber features/telnet_internal_network.feature:8 #
  Scenario: 社内テストサーバへアクセス 1 scenario (1 failed) 4 steps (1 failed, 3 passed) 0m10.610s
+\end{lstlisting}
+
+\begin{lstlisting}[caption=telnetテストステップ,label=lst:telnet-step,linebackgroundcolor={\ifnum\value{lstnumber}>3 \ifnum\value{lstnumber}<6\color{green!30}\fi\fi}]
+When(/^ヨーヨーダイン社内部のテスト環境サーバに telnet でログイン$/) do
+  cd('.') do
+    @telnet_service = AsyncExecutor.new(host: @test_host, result_file: 'log/telnet_server.log')
+    @telnet_service.exec "bash -c 'echo LoginOK | sudo nc -l 23'"
+    @src_host.exec "bash -c 'telnet #{@test_host.ip_address} > log/login.log; exit 0'"
+  end
+end
 \end{lstlisting}
 
     \paragraph{調査}
@@ -219,15 +229,19 @@ exit_group(1)                           = ?
 \end{lstlisting}
 
 成功時(\lstref{lst:telnet-success})では、\code{connect}後にサーバからの
-\verb|recvfrom(3, "TelnetOK\n", ...)|が先にきている(23行目)。しかし、失
-敗時(\lstref{lst:telnet-fail})では、クライアントからのネゴシエーションの
+\verb|recvfrom(3, "TelnetOK\n", ...)|\footnote{\lstref{lst:telnet-step}
+などテストステップのコード中では\code{LoginOK}となっている。これは、トラ
+ブルシュートと前後してリファクタリング(テスト結果判定の処理統一)をおこなっ
+たためである。ロジックとしては同様。結果判定の統一については
+\ref{sec:refactor-filename}節参照。}が先にきている(23行目)。しかし、失敗
+時(\lstref{lst:telnet-fail})では、クライアントからのネゴシエーションの
 \verb|sendto(3, "\377...", ...)|が先に実行されている(25行目)。この場合後
 続の\code{write}は実行されていない(そもそも\code{recv}しない)。
 
-これらの strace ログから、送受信順序によるものと仮定した。仮定を実証する
-ために、telnetクライアントを改変する。Telnetクライアントが\code{connect}
-したあとサーバから来るデータを先に受ける(\code{recv})ために、
-\code{connect}のあとに\code{sleep}を入れる
+これらの strace ログから、トラブルの原因は送受信順序によるものと仮定した。
+仮定を実証するために、telnetクライアントを改変する。Telnetクライアントが
+\code{connect}したあとサーバから来るデータを先に受ける(\code{recv})ため
+に、\code{connect}のあとに\code{sleep}を入れる
 (\lstref{lst:modified-telnet-client})。これをビルドして
 (\lstref{lst:howto-build-telnet})、テストステップの中で使用する
 (\lstref{lst:telnet-step})。結果として、エラーが発生しなくなることを確認
@@ -256,7 +270,7 @@ cd telnet
 make
 \end{lstlisting}
 
-\begin{lstlisting}[caption=改変telnetクライアントの使用,label=lst:telnet-step]
+\begin{lstlisting}[caption=改変telnetクライアントの使用,label=lst:telnet-step,linebackgroundcolor={\ifnum\value{lstnumber}=5 \color{green!30}\fi}]
 When(/^ヨーヨーダイン社内部のテスト環境サーバに telnet でログイン$/) do
   cd('.') do
     @telnet_service = AsyncExecutor.new(host: @test_host, result_file: 'log/telnet_server.log')
@@ -315,7 +329,8 @@ end
 はなくICMP(ping)に変更すると、同様のテスト条件でも問題が発生しない。
 
     \paragraph{調査}
-通信種別によって問題の有無が変化するため以下のように順を追って調査している。
+通信種別によって問題の有無が変化するため、以下のように順を追って調査して
+いる。
 \begin{itemize}
  \item テストノードのパッチ接続先の条件による事象変化の確認。(パッチ接続
        先ポートの access/trunk による違いの確認。)
