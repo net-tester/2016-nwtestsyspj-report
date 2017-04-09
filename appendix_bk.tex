@@ -12,12 +12,12 @@
 どう考えるかについては\ref{sec:debugging-test-scenario}節で解説している。
 
 本章では特に、テストを複数回実行すると成功・失敗がくりかえされてテスト結
-果が不定になった例を選定している(\ref{sec:ping-probrem}節・
-\ref{sec:telnet-probrem}節)。このようなテストは flaky\footnote{flaky =
-「当てにならない」} test とも呼ばれ、テストの連続実行(回帰テスト)におい
+果が不定になった例を選定している(付録~\ref{sec:ping-probrem}・付
+録~\ref{sec:telnet-probrem})。このようなテストは flaky\footnote{flaky
+=「当てにならない」} test とも呼ばれ、テストの連続実行(回帰テスト)におい
 て問題となる。また、テストシナリオに本来であれば影響しないはずの条件変化
-によって、テスト成否結果が変化した事例についてもとりあげた
-(\ref{sec:SSG-troubles}節)。
+によって、テスト成否結果が変化した事例についてもとりあげた(付
+録~\ref{sec:SSG-troubles})。
 
  \section{初回のping送受信失敗}
  \label{sec:ping-probrem}
@@ -509,7 +509,7 @@ tcpdump: listening on ens5, link-type EN10MB (Ethernet), capture size 262144 byt
 した。原因としては次のような要因が推測される(詳細な原因追求はできていな
 い)。
 \begin{itemize}
- \item \ref{sec:tcp-checksum-offload-trouble}節のように、FW(SSG)はパケッ
+ \item 付録~\ref{sec:tcp-checksum-offload-trouble}のように、FW(SSG)はパケッ
        トに不備があっても通してしまう事例がある。この事例でも物理
        OFS(OFS1)に何らかの不具合があって、パケットが全部は送信されていな
        いと仮定する。L2SWEX--FW1--L2SW1間は障害試験のためにOFS1を経由す

@@ -247,8 +247,8 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
        する環境でもよい。
  \item NetTesterはバックエンドで\code{ip}コマンドを使用してNetwork
        Namespaceの操作をおこなっている\footnote{正確にはNetTesterが利用
-       しているTrema/Phutが\code{ip}コマンドを使用している。
-       \ref{sec:phut_basics}節参照。}。このときroot権限が必要になり
+       しているTrema/Phutが\code{ip}コマンドを使用している。付
+       録~\ref{sec:phut_basics}参照。}。このときroot権限が必要になり
        \code{sudo}を使用して実行する。\code{sudo}利用にあたって
        \code{PATH}に関するエラーが発生する場合は\code{sudo}設定ファイル
        (\code{/etc/sudoers})の\code{secure\_path}設定を修正すること。
@@ -280,9 +280,9 @@ NetTesterサーバ(VM)へ直結させる必要がある。SSW-PSW間はOFC(NetTe
 
     \paragraph{Open vSwitch(SSW)の設定}
 NetTesterサーバ上のソフトウェアスイッチは、NetTester起動時に都度
-NetTesterが設定をおこなうため、事前に設定等をおこなう必要はない。
-NetTesterを起動すると、\ref{sec:nettester-model-restriction}節に示した
-DPIDでOpen vSwitchのブリッジが作成され、OFCとの接続設定がおこなわれる。
+NetTesterが設定するため、事前設定は不要である。NetTesterを起動すると、
+\ref{sec:nettester-model-restriction}節に示したDPIDでOpen vSwitchのブリッ
+ジが作成され、OFCとの接続設定がおこなわれる。
 
     \paragraph{NICのハードウェアオフロード機能操作}
     % trunkを使ってTCP通信するとおかしくなる – NetTester
@@ -290,8 +290,8 @@ DPIDでOpen vSwitchのブリッジが作成され、OFCとの接続設定がお�
     % Netns Checksum Offload 機能実装 – NetTester
     % https://3.basecamp.com/3088280/buckets/867009/todos/370752297
 NetTesterをつかったテストシナリオの実装・テスト実行の際、特定の条件下で
-正しく通信がおこなえない問題がおきた(詳細は
-\ref{sec:tcp-checksum-offload-trouble}参照)。ワークアラウンドとして、
+正しく通信がおこなえない問題がおきた(付
+録~\ref{sec:tcp-checksum-offload-trouble})。ワークアラウンドとして、
 NetTesterでテスト用ノード(Netns)を生成した際、ノード用のNIC(veth)でチェッ
 クサム計算のハードウェアオフロードを無効化している。
 
@@ -395,8 +395,8 @@ NetTesterは以下の2つの環境変数を使用する。
 rake DEVICE=ens5 DPID=0x1 cucumber
 \end{lstlisting}
 
-この他に、テスト対象ネットワーク機器操作のために使うツール
-(\ref{sec:expectacle}節)でも、テストシナリオ実行の際に環境変数を使用する
+この他に、テスト対象ネットワーク機器操作のために使うツール(付
+録~\ref{sec:expectacle})でも、テストシナリオ実行の際に環境変数を使用する
 ので注意すること。
 
   \subsection{NetTester APIの基礎}
@@ -488,8 +488,8 @@ NetTesterを使ったネットワークのテスト操作は次のステップ�
  \item NetTesterでテスト用ノードを生成する
        \begin{itemize}
         \item \verb|NetTester::Netns.new| によって Network Namespace を
-              使ったテスト用ノードを生成する。(詳細については
-              \ref{sec:phut_basics}節参照)
+              使ったテスト用ノードを生成する。(付
+              録~\ref{sec:phut_basics})
         \item 生成と同時にテスト対象ネットワークへの配置(パッチ接続)をお
               こなう。引数\verb|virtual_port_number|および
               \verb|physical_port_number|は「パッチ」の両端点となるポー

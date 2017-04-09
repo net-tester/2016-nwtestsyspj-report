@@ -5,8 +5,8 @@
 
 本プロジェクトでNetTesterに実装した「パッチ」動作とフロー制御方式につい
 て解説する。テスト用ノードの操作についてはTrema/Phutを利用して実装されて
-いる。Phutの使いかたやNetTesterでの応用については\ref{sec:phut_basics}を
-参照のこと。
+いる。Phutの使いかたやNetTesterでの応用については付
+録~\ref{sec:phut_basics}を参照のこと。
 
  \section{NetTesterのモデル}
  \label{sec:nettester-model}
@@ -740,8 +740,8 @@ OpenFlow/1.0では、テーブルミス\footnote{フローテーブル内のど�
 OFCでは動作を統一させるために明示的に指定する。当初、デバッグ用途もあり
 \code{actions=CONTROLLER}としていた。ところが、Trema のパケットパーサ
 (Trema/Pio)で特定のパケットがパースできず、コントローラが停止するバグが
-あった\footnote{修正済。デバッグについての補足情報については
-\ref{sec:debugging-trema}節を参照。}。そのため、NetTesterでは default
+あった\footnote{修正済。デバッグについての補足情報については付
+録~\ref{sec:debugging-trema}を参照。}。そのため、NetTesterでは default
 DROP を採用している。
 
   \section{リンク操作方式}
@@ -795,11 +795,10 @@ OpenFlowスイッチを仲介させることで物理トポロジ操作を可能
  \item OpenFlow Message (PortMod) を物理OpenFlowスイッチに送信し、ポート
        状態変更の操作をおこなう。
 \end{itemize}
-今回、NetTester では、物理OpenFlowスイッチにExpectベースのツール
-(\ref{sec:expectacle}節)でログイン/コマンド実行し、直接スイッチ上でポー
-ト状態変更する方法をとった。これは、PoC実施時点\footnote{2016年10月--12
-月}のTremaではまだPortModメッセージの送信が実装されていなかったためであ
-る。
+今回、NetTester では、物理OpenFlowスイッチにExpectベースのツール(付
+録~\ref{sec:expectacle})でログイン/コマンド実行し、直接スイッチ上でポート
+状態変更する方法をとった。これは、PoC実施時点\footnote{2016年10月--12月}
+のTremaではまだPortModメッセージの送信が実装されていなかったためである。
 
 %% TODO/あと、以下のはなしどうする?
 

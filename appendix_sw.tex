@@ -97,7 +97,7 @@ trema -v run <controller>.rb
   \subsection{Packet-in Binary Analysis}
   \label{sec:trema-packet-in-analysis}
 
-\ref{sec:trema-logger}節の事例(特定packet-inによるOFCの停止)については、
+付録~\ref{sec:trema-logger}の事例(特定packet-inによるOFCの停止)については、
 実際にpacket-inするバイナリを解析し、原因がTrema/Pio~\cite{pio}パケット
 パーサのバグであることを突き止めた。ここではその際のデバッグ方法を記載す
 る。
@@ -201,12 +201,12 @@ irb> Pio::OpenFlow.read [1, 10, 0, ... , 40, 53].pack("C*")
 % - 送受信メッセージログ – NetTester
 %   \url{https://3.basecamp.com/3088280/buckets/867009/messages/241506055}
 
-最新版のTrema~\cite{trema-pr433}では、\ref{sec:trema-logger}節・
-\ref{sec:trema-packet-in-analysis}節で実施したデバッグ作業をもとに、OFC
+最新版のTrema~\cite{trema-pr433}では、付録~\ref{sec:trema-logger}・付
+録~\ref{sec:trema-packet-in-analysis}で実施したデバッグ作業をもとに、OFC
 が送受信したOpenFlowメッセージをログで取得できるようになっている。
 \lstref{lst:trema-ofmessage-debugprint}のように\code{-v}(verbose)オプショ
-ンを指定することで利用できる。(\ref{sec:trema-logger}節で解説したように
-ログファイル(\code{trema.log})にも出力される。)
+ンを指定することで利用できる。(付録~\ref{sec:trema-logger}で解説したよう
+にログファイル(\code{trema.log})にも出力される。)
 \begin{lstlisting}[language=,caption=OpenFlowメッセージのデバッグプリント,label=lst:trema-ofmessage-debugprint]
 % bundle exec trema -v run ./lib/hello_trema.rb -c trema.conf
 sudo ovs-vsctl add-br br0xabc
